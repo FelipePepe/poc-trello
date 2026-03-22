@@ -19,7 +19,6 @@ import customFieldStandaloneRouter from './routes/custom-field-standalone.routes
 import cardFieldValuesRouter from './routes/card-field-values.routes';
 
 const app = express();
-const PORT = process.env['PORT'] ?? 3000;
 
 // ─── MFA secret auto-generation ──────────────────────────────────────────────
 if (!process.env['MFA_SECRET']) {
@@ -42,10 +41,14 @@ app.use(express.json());
 
 // ─── OpenAPI / Swagger UI ────────────────────────────────────────────────────
 const swaggerDoc = YAML.load(path.join(__dirname, 'openapi/openapi.yaml'));
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDoc, {
-  customSiteTitle: 'Trello Clone API',
-  swaggerOptions: { persistAuthorization: true },
-}));
+app.use(
+  '/api-docs',
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerDoc, {
+    customSiteTitle: 'Trello Clone API',
+    swaggerOptions: { persistAuthorization: true },
+  }),
+);
 
 // ─── Routes ──────────────────────────────────────────────────────────────────
 // Auth (public)
@@ -75,12 +78,6 @@ app.use((_req, res) => {
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error(err.stack);
   res.status(500).json({ message: 'Internal server error' });
-});
-
-// ─── Start ───────────────────────────────────────────────────────────────────
-app.listen(PORT, () => {
-  console.log(`\n🚀 Server running at http://localhost:${PORT}`);
-  console.log(`📚 Swagger UI  at http://localhost:${PORT}/api-docs\n`);
 });
 
 export default app;

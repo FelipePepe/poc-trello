@@ -4,9 +4,9 @@
   "description": "Trello clone REST API with OpenAPI/Swagger",
   "main": "dist/app.js",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/app.ts",
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
-    "start": "node dist/app.js",
+    "start": "node dist/src/server.js",
     "lint": "eslint src",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate"
