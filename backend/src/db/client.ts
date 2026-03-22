@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import * as schema from './schema';
+import { buildSslConfig, normalizeConnectionString } from './postgres-config';
 
 let db: ReturnType<typeof drizzle<typeof schema>>;
 
@@ -11,11 +12,12 @@ export function initDb(): void {
     console.error('DATABASE_URL is required');
     process.exit(1);
   }
-  const requireSsl = url.includes('sslmode=require') || url.includes('aiven');
+
   const pool = new Pool({
-    connectionString: url,
-    ...(requireSsl ? { ssl: { rejectUnauthorized: false } } : {}),
+    connectionString: normalizeConnectionString(url),
+    ssl: buildSslConfig(),
   });
+
   db = drizzle(pool, { schema });
 }
 
