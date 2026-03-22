@@ -11,7 +11,11 @@ export function initDb(): void {
     console.error('DATABASE_URL is required');
     process.exit(1);
   }
-  const pool = new Pool({ connectionString: url });
+  const requireSsl = url.includes('sslmode=require') || url.includes('aiven');
+  const pool = new Pool({
+    connectionString: url,
+    ...(requireSsl ? { ssl: { rejectUnauthorized: false } } : {}),
+  });
   db = drizzle(pool, { schema });
 }
 
