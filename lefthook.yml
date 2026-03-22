@@ -1,0 +1,22 @@
+pre-commit:
+  parallel: false
+  commands:
+    gitleaks:
+      run: gitleaks protect --staged --redact --no-banner
+
+    prettier:
+      glob: "**/*.{ts,js,html,scss,css,json,yaml,yml,md}"
+      run: node_modules/.bin/prettier --write {staged_files} && git add {staged_files}
+
+    lint-backend:
+      root: "backend/"
+      glob: "src/**/*.ts"
+      run: npx eslint {staged_files} --max-warnings 0
+
+    lint-frontend:
+      root: "frontend/"
+      glob: "src/**/*.ts"
+      run: npx ng lint --quiet
+
+    gga:
+      run: gga run

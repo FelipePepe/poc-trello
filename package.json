@@ -1,0 +1,7 @@
+{
+  "name": "poc-trello",
+  "private": true,
+  "devDependencies": {
+    "prettier": "^3.5.3"
+  }
+}

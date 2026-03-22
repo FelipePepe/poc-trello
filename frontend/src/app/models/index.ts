@@ -69,37 +69,26 @@ export type UpsertCardFieldValueDto = {
   value: string | null;
 };
 
-export interface CreateBoardDto {
+export type CreateBoardDto = {
   title: string;
   description?: string;
   background?: string;
-}
+};
 
-export interface UpdateBoardDto {
-  title?: string;
-  description?: string;
-  background?: string;
-}
+export type UpdateBoardDto = Partial<Pick<Board, 'title' | 'description' | 'background'>>;
 
-export interface CreateListDto {
-  title: string;
-}
+export type CreateListDto = Pick<BoardList, 'title'>;
 
-export interface CreateCardDto {
-  title: string;
+export type CreateCardDto = Pick<Card, 'title'> & {
   description?: string;
   dueDate?: string | null;
   labels?: Label[];
-}
+};
 
-export interface UpdateCardDto {
-  title?: string;
-  description?: string;
+export type UpdateCardDto = Partial<CreateCardDto> & {
   position?: number;
   listId?: string;
-  dueDate?: string | null;
-  labels?: Label[];
-}
+};
 
 export const LABEL_PRESETS: Omit<Label, 'id'>[] = [
   { name: 'Bug', color: '#FF5630' },
@@ -113,8 +102,20 @@ export const LABEL_PRESETS: Omit<Label, 'id'>[] = [
 ];
 
 export const BOARD_BACKGROUNDS = [
-  '#0052CC', '#0065FF', '#253858', '#172B4D',
-  '#00875A', '#36B37E', '#FF5630', '#DE350B',
-  '#FF8B00', '#FF7452', '#6554C0', '#8777D9',
-  '#00B8D9', '#57D9A3', '#4C9AFF', '#B8ACF6',
+  '#0052CC',
+  '#0065FF',
+  '#253858',
+  '#172B4D',
+  '#00875A',
+  '#36B37E',
+  '#FF5630',
+  '#DE350B',
+  '#FF8B00',
+  '#FF7452',
+  '#6554C0',
+  '#8777D9',
+  '#00B8D9',
+  '#57D9A3',
+  '#4C9AFF',
+  '#B8ACF6',
 ];
