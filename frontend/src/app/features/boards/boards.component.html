@@ -1,0 +1,68 @@
+<div class="boards-page">
+  <header class="boards-header">
+    <div class="header-content">
+      <div class="header-title">
+        <mat-icon>dashboard</mat-icon>
+        <h1>Mis Tableros</h1>
+      </div>
+      <button mat-raised-button color="primary" (click)="openCreateDialog()">
+        <mat-icon>add</mat-icon>
+        Nuevo tablero
+      </button>
+    </div>
+  </header>
+
+  <main class="boards-content">
+    @if (loading()) {
+      <div class="loading-state">
+        <mat-spinner diameter="48"></mat-spinner>
+        <p>Cargando tableros...</p>
+      </div>
+    } @else if (boards().length === 0) {
+      <div class="empty-state">
+        <mat-icon class="empty-icon">dashboard_customize</mat-icon>
+        <h2>Sin tableros aún</h2>
+        <p>Creá tu primer tablero para empezar a organizar tus tareas</p>
+        <button mat-raised-button color="primary" (click)="openCreateDialog()">
+          <mat-icon>add</mat-icon>
+          Crear tablero
+        </button>
+      </div>
+    } @else {
+      <div class="boards-grid">
+        @for (board of boards(); track board.id) {
+          <a [routerLink]="['/board', board.id]" class="board-card-link">
+            <div
+              class="board-card"
+              [style.background]="board.background"
+              [style.color]="getContrastColor(board.background)"
+            >
+              <div class="board-card-body">
+                <h3 class="board-title">{{ board.title }}</h3>
+                @if (board.description) {
+                  <p class="board-description">{{ board.description }}</p>
+                }
+              </div>
+              <div class="board-card-actions">
+                <button
+                  mat-icon-button
+                  class="delete-btn"
+                  matTooltip="Eliminar tablero"
+                  (click)="deleteBoard($event, board)"
+                  [style.color]="getContrastColor(board.background)"
+                >
+                  <mat-icon>delete_outline</mat-icon>
+                </button>
+              </div>
+            </div>
+          </a>
+        }
+
+        <div class="board-card board-card--add" (click)="openCreateDialog()">
+          <mat-icon>add</mat-icon>
+          <span>Crear nuevo tablero</span>
+        </div>
+      </div>
+    }
+  </main>
+</div>

@@ -1,0 +1,101 @@
+<div class="dialog-container">
+  <!-- Header -->
+  <div class="dialog-header">
+    <mat-icon class="header-icon">settings</mat-icon>
+    <h2 class="dialog-title">Campos del tablero</h2>
+    <button mat-icon-button mat-dialog-close class="close-btn">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <div class="dialog-body">
+    @if (loading()) {
+      <p class="hint-text">Cargando campos...</p>
+    } @else {
+      @if (fields().length === 0 && !addingField()) {
+        <p class="hint-text">No hay campos personalizados. ¡Creá uno!</p>
+      }
+
+      <!-- Existing fields list -->
+      @if (fields().length > 0) {
+        <div class="fields-list">
+          @for (field of fields(); track field.id) {
+            <div class="field-row">
+              <div class="field-info">
+                <span class="field-name">{{ field.name }}</span>
+                <span class="type-badge type-badge--{{ field.type }}">{{ getTypeLabel(field.type) }}</span>
+                @if (field.options?.length) {
+                  <span class="options-hint">{{ field.options!.join(', ') }}</span>
+                }
+              </div>
+              <button
+                mat-icon-button
+                class="field-delete-btn"
+                (click)="deleteField(field)"
+                matTooltip="Eliminar campo"
+              >
+                <mat-icon>delete_outline</mat-icon>
+              </button>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- Add field form -->
+      @if (addingField()) {
+        <mat-divider></mat-divider>
+        <div class="add-field-form">
+          <h4 class="add-field-title">Nuevo campo</h4>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Nombre</mat-label>
+            <input
+              matInput
+              [value]="newFieldName()"
+              (input)="newFieldName.set($any($event.target).value)"
+              placeholder="Ej: Prioridad"
+            />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Tipo</mat-label>
+            <mat-select [value]="newFieldType()" (valueChange)="newFieldType.set($event)">
+              @for (ft of fieldTypes; track ft.value) {
+                <mat-option [value]="ft.value">{{ ft.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          @if (newFieldType() === 'select') {
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Opciones (separadas por coma)</mat-label>
+              <input
+                matInput
+                [value]="newFieldOptions()"
+                (input)="newFieldOptions.set($any($event.target).value)"
+                placeholder="Ej: Alta, Media, Baja"
+              />
+            </mat-form-field>
+          }
+
+          <div class="add-field-actions">
+            <button mat-button (click)="addingField.set(false)">Cancelar</button>
+            <button
+              mat-stroked-button
+              class="add-btn"
+              (click)="addField()"
+              [disabled]="!newFieldName().trim()"
+            >
+              Agregar campo
+            </button>
+          </div>
+        </div>
+      } @else {
+        <button mat-stroked-button class="new-field-btn" (click)="addingField.set(true)">
+          <mat-icon>add</mat-icon>
+          Agregar campo
+        </button>
+      }
+    }
+  </div>
+</div>

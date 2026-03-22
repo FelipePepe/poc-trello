@@ -1,0 +1,138 @@
+<div class="login-page">
+  <div class="login-card">
+    <!-- Brand -->
+    <div class="brand">
+      <div class="brand-icon">
+        <mat-icon>view_kanban</mat-icon>
+      </div>
+      <h1>Trello Clone</h1>
+      <p class="subtitle">Organizá tu trabajo</p>
+    </div>
+
+    <!-- Step: Password -->
+    @if (step() === 'password') {
+      <form class="form" [formGroup]="passwordForm" (ngSubmit)="onPasswordSubmit()">
+        <mat-form-field appearance="outline">
+          <mat-label>Email</mat-label>
+          <input matInput type="email" formControlName="email" autocomplete="email" />
+          <mat-icon matPrefix>email</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Contraseña</mat-label>
+          <input
+            matInput
+            [type]="hidePassword() ? 'password' : 'text'"
+            formControlName="password"
+            autocomplete="current-password"
+          />
+          <mat-icon matPrefix>lock</mat-icon>
+          <button
+            mat-icon-button
+            matSuffix
+            type="button"
+            (click)="hidePassword.set(!hidePassword())"
+          >
+            <mat-icon>{{ hidePassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+        </mat-form-field>
+
+        @if (error()) {
+          <div class="error-msg">
+            <mat-icon>error_outline</mat-icon>
+            {{ error() }}
+          </div>
+        }
+
+        <button
+          class="submit-btn"
+          mat-flat-button
+          type="submit"
+          [disabled]="loading() || passwordForm.invalid"
+        >
+          @if (loading()) {
+            <mat-spinner diameter="20" />
+          } @else {
+            Continuar
+            <mat-icon>arrow_forward</mat-icon>
+          }
+        </button>
+      </form>
+    }
+
+    <!-- Step: MFA Verify -->
+    @if (step() === 'mfa-verify') {
+      <div class="mfa-header">
+        <mat-icon class="mfa-icon">shield</mat-icon>
+        <h2>Verificación en dos pasos</h2>
+        <p>Ingresá el código de 6 dígitos de tu app autenticadora</p>
+      </div>
+
+      <form class="form" [formGroup]="mfaForm" (ngSubmit)="onMfaSubmit()">
+        <mat-form-field appearance="outline" class="otp-field">
+          <mat-label>Código MFA</mat-label>
+          <input
+            matInput
+            type="text"
+            inputmode="numeric"
+            formControlName="code"
+            maxlength="6"
+            placeholder="000000"
+            autocomplete="one-time-code"
+          />
+          <mat-icon matPrefix>dialpad</mat-icon>
+        </mat-form-field>
+
+        @if (error()) {
+          <div class="error-msg">
+            <mat-icon>error_outline</mat-icon>
+            {{ error() }}
+          </div>
+        }
+
+        <button
+          class="submit-btn"
+          mat-flat-button
+          type="submit"
+          [disabled]="loading() || mfaForm.invalid"
+        >
+          @if (loading()) {
+            <mat-spinner diameter="20" />
+          } @else {
+            Verificar
+            <mat-icon>verified_user</mat-icon>
+          }
+        </button>
+
+        <!-- QR Setup section -->
+        <div class="setup-section">
+          @if (!showSetup()) {
+            <button mat-button type="button" class="setup-btn" (click)="loadSetupQr()">
+              <mat-icon>qr_code</mat-icon>
+              Primera vez — configurar autenticador
+            </button>
+          }
+
+          @if (showSetup() && setupData()) {
+            <div class="qr-container">
+              <p class="qr-hint">Escaneá con Google Authenticator, Aegis o similar:</p>
+              <img class="qr-img" [src]="setupData()!.qrDataUrl" alt="QR Code MFA" />
+              <details class="manual-key">
+                <summary>Clave manual</summary>
+                <code>{{ setupData()!.secret }}</code>
+              </details>
+            </div>
+          }
+
+          @if (showSetup() && loading() && !setupData()) {
+            <mat-spinner diameter="32" />
+          }
+        </div>
+
+        <button mat-button type="button" class="back-btn" (click)="goBack()">
+          <mat-icon>arrow_back</mat-icon> Volver
+        </button>
+      </form>
+    }
+  </div>
+</div>

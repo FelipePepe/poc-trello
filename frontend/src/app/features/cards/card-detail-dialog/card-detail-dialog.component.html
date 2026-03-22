@@ -1,0 +1,190 @@
+<div class="card-dialog">
+  <!-- Header -->
+  <div class="dialog-header">
+    <mat-icon class="header-icon">credit_card</mat-icon>
+    <div class="header-title" style="flex: 1">
+      @if (editingTitle()) {
+        <input
+          id="card-title-input"
+          class="title-input"
+          [value]="title()"
+          (input)="title.set($any($event.target).value)"
+          (blur)="editingTitle.set(false)"
+          (keydown.enter)="editingTitle.set(false)"
+          (keydown.escape)="editingTitle.set(false)"
+        />
+      } @else {
+        <h2 class="dialog-title" (click)="startEditTitle()">{{ title() }}</h2>
+      }
+      <p class="list-info">
+        en la lista <strong>{{ currentListName }}</strong>
+      </p>
+    </div>
+    <button mat-icon-button mat-dialog-close class="close-btn">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <div class="dialog-body">
+    <!-- Left column -->
+    <div class="dialog-main">
+      <!-- Labels -->
+      <section class="section">
+        <h4 class="section-title">
+          <mat-icon>label</mat-icon>
+          Etiquetas
+        </h4>
+        <div class="labels-grid">
+          @for (preset of labelPresets; track preset.name) {
+            <button
+              type="button"
+              class="label-btn"
+              [style.background]="preset.color"
+              [class.selected]="isLabelSelected(preset)"
+              (click)="toggleLabel(preset)"
+            >
+              @if (isLabelSelected(preset)) {
+                <mat-icon class="check-icon">check</mat-icon>
+              }
+              {{ preset.name }}
+            </button>
+          }
+        </div>
+      </section>
+
+      <mat-divider></mat-divider>
+
+      <!-- Description -->
+      <section class="section">
+        <h4 class="section-title">
+          <mat-icon>subject</mat-icon>
+          Descripción
+        </h4>
+        <textarea
+          class="description-input"
+          [value]="description()"
+          (input)="description.set($any($event.target).value)"
+          rows="5"
+          placeholder="Agregá una descripción más detallada..."
+        ></textarea>
+      </section>
+
+      <mat-divider></mat-divider>
+
+      <!-- Custom fields -->
+      <section class="section">
+        <h4 class="section-title">
+          <mat-icon>tune</mat-icon>
+          Campos personalizados
+        </h4>
+        @if (boardFields().length === 0) {
+          <p class="empty-hint">No hay campos personalizados para este tablero.</p>
+        }
+        @for (field of boardFields(); track field.id) {
+          <div class="custom-field-row">
+            <label class="field-label">{{ field.name }}</label>
+            @switch (field.type) {
+              @case ('text') {
+                <input
+                  class="cf-input"
+                  type="text"
+                  [value]="fieldValues().get(field.id) ?? ''"
+                  (change)="updateFieldValue(field.id, $any($event.target).value || null)"
+                  placeholder="—"
+                />
+              }
+              @case ('number') {
+                <input
+                  class="cf-input"
+                  type="number"
+                  [value]="fieldValues().get(field.id) ?? ''"
+                  (change)="updateFieldValue(field.id, $any($event.target).value || null)"
+                  placeholder="—"
+                />
+              }
+              @case ('checkbox') {
+                <label class="cf-checkbox-label">
+                  <input
+                    type="checkbox"
+                    class="cf-checkbox"
+                    [checked]="fieldValues().get(field.id) === 'true'"
+                    (change)="updateFieldValue(field.id, $any($event.target).checked ? 'true' : null)"
+                  />
+                  <span class="cf-checkbox-text">
+                    {{ fieldValues().get(field.id) === 'true' ? 'Sí' : 'No' }}
+                  </span>
+                </label>
+              }
+              @case ('date') {
+                <input
+                  class="cf-input"
+                  type="date"
+                  [value]="fieldValues().get(field.id) ?? ''"
+                  (change)="updateFieldValue(field.id, $any($event.target).value || null)"
+                />
+              }
+              @case ('select') {
+                <select
+                  class="cf-select"
+                  [value]="fieldValues().get(field.id) ?? ''"
+                  (change)="updateFieldValue(field.id, $any($event.target).value || null)"
+                >
+                  <option value="">— Seleccioná —</option>
+                  @for (opt of (field.options ?? []); track opt) {
+                    <option [value]="opt">{{ opt }}</option>
+                  }
+                </select>
+              }
+            }
+          </div>
+        }
+      </section>
+    </div>
+
+    <!-- Right column (sidebar) -->
+    <aside class="dialog-sidebar">
+      <!-- Move to list -->
+      <section class="sidebar-section">
+        <h5 class="sidebar-title">Mover a lista</h5>
+        <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+          <mat-select [value]="selectedListId()" (valueChange)="selectedListId.set($event)">
+            @for (list of data.lists; track list.id) {
+              <mat-option [value]="list.id">{{ list.title }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </section>
+
+      <!-- Due date -->
+      <section class="sidebar-section">
+        <h5 class="sidebar-title">Fecha límite</h5>
+        <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+          <mat-label>Seleccioná fecha</mat-label>
+          <input matInput [matDatepicker]="picker" [value]="dueDate()" (dateChange)="dueDate.set($event.value)" />
+          <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+          <mat-datepicker #picker></mat-datepicker>
+        </mat-form-field>
+        @if (dueDate()) {
+          <button mat-button class="clear-date-btn" (click)="dueDate.set(null)">
+            <mat-icon>clear</mat-icon>
+            Quitar fecha
+          </button>
+        }
+      </section>
+    </aside>
+  </div>
+
+  <!-- Actions -->
+  <mat-divider></mat-divider>
+  <div class="dialog-actions">
+    <button mat-stroked-button color="warn" (click)="deleteCard()">
+      <mat-icon>delete_outline</mat-icon>
+      Eliminar
+    </button>
+    <div style="flex: 1"></div>
+    <button mat-button mat-dialog-close>Cancelar</button>
+    <button mat-raised-button color="primary" (click)="save()" [disabled]="!title().trim() || saving()">
+      @if (saving()) { Guardando... } @else { Guardar cambios }
+    </button>
+  </div>
+</div>

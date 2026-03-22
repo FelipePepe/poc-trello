@@ -1,0 +1,185 @@
+@if (loading()) {
+  <div class="board-loading">
+    <mat-spinner diameter="48"></mat-spinner>
+  </div>
+} @else if (board()) {
+  <div class="board-wrapper" [style.background]="getBoardGradient(board()!.background)">
+    <!-- Header -->
+    <header class="board-header">
+      <div class="board-header-left">
+        <button mat-icon-button routerLink="/" style="color: #c084fc" matTooltip="Volver">
+          <mat-icon>arrow_back</mat-icon>
+        </button>
+
+        @if (editingBoardTitle()) {
+          <input
+            id="board-title-input"
+            class="board-title-input"
+            [(ngModel)]="boardTitle"
+            (blur)="confirmEditBoardTitle()"
+            (keydown.enter)="confirmEditBoardTitle()"
+            (keydown.escape)="editingBoardTitle.set(false)"
+            style="color: white"
+          />
+        } @else {
+          <h1
+            class="board-title"
+            (click)="startEditBoardTitle()"
+            matTooltip="Clic para editar"
+          >{{ board()!.title }}</h1>
+        }
+      </div>
+      <div class="board-header-right">
+        <button
+          mat-icon-button
+          style="color: rgba(255,255,255,0.6)"
+          matTooltip="Configuración del tablero"
+          (click)="openBoardSettings()"
+        >
+          <mat-icon>settings</mat-icon>
+        </button>
+      </div>
+    </header>
+
+    <!-- Lists container -->
+    <div
+      class="lists-container"
+      cdkDropList
+      cdkDropListOrientation="horizontal"
+      [cdkDropListData]="lists()"
+      (cdkDropListDropped)="onListDrop($event)"
+    >
+      @for (list of lists(); track list.id) {
+        <div class="list-wrapper" cdkDrag [cdkDragData]="list">
+          <div class="list-card">
+            <!-- List header -->
+            <div class="list-header" cdkDragHandle>
+              @if (editingListId() === list.id) {
+                <input
+                  [id]="'edit-list-' + list.id"
+                  class="list-title-input"
+                  [(ngModel)]="editingListTitle"
+                  (blur)="confirmEditList(list)"
+                  (keydown.enter)="confirmEditList(list)"
+                  (keydown.escape)="editingListId.set(null)"
+                />
+              } @else {
+                <h3 class="list-title" (click)="startEditList(list)">{{ list.title }}</h3>
+              }
+              <button mat-icon-button class="list-menu-btn" (click)="deleteList(list)" matTooltip="Eliminar lista">
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+
+            <!-- Cards -->
+            <div
+              class="cards-container"
+              cdkDropList
+              [id]="'list-' + list.id"
+              [cdkDropListData]="getCards(list.id)"
+              [cdkDropListConnectedTo]="listConnections()"
+              (cdkDropListDropped)="onCardDrop($event, list.id)"
+            >
+              @for (card of getCards(list.id); track card.id) {
+                <div class="card" cdkDrag [cdkDragData]="card" (click)="openCardDetail(card)">
+                  <div class="card-labels">
+                    @for (label of card.labels; track label.id) {
+                      <span class="label-chip" [style.background]="label.color" [title]="label.name"></span>
+                    }
+                  </div>
+                  <p class="card-title">{{ card.title }}</p>
+                  <div class="card-meta">
+                    @if (card.description) {
+                      <mat-icon class="meta-icon" matTooltip="Tiene descripción">subject</mat-icon>
+                    }
+                    @if (card.dueDate) {
+                      <span class="due-date" [class.overdue]="isDue(card.dueDate)">
+                        <mat-icon class="meta-icon">schedule</mat-icon>
+                        {{ card.dueDate | date:'d MMM' }}
+                      </span>
+                    }
+                    <button
+                      mat-icon-button
+                      class="card-delete-btn"
+                      (click)="deleteCard($event, card)"
+                      matTooltip="Eliminar"
+                    >
+                      <mat-icon>close</mat-icon>
+                    </button>
+                  </div>
+
+                  <!-- Drag placeholder -->
+                  <div class="card-placeholder" *cdkDragPlaceholder></div>
+                </div>
+              }
+
+              @if (getCards(list.id).length === 0) {
+                <div class="empty-list-hint">Sin tarjetas</div>
+              }
+            </div>
+
+            <!-- Add card -->
+            @if (addingCardListId() === list.id) {
+              <div class="add-card-form">
+                <textarea
+                  [id]="'new-card-' + list.id"
+                  class="add-card-input"
+                  [(ngModel)]="newCardTitle"
+                  placeholder="Título de la tarjeta..."
+                  rows="3"
+                  (keydown.enter)="$event.preventDefault(); confirmAddCard(list.id)"
+                  (keydown.escape)="cancelAddCard()"
+                ></textarea>
+                <div class="add-card-actions">
+                  <button mat-raised-button color="primary" (click)="confirmAddCard(list.id)" [disabled]="!newCardTitle().trim()">
+                    Agregar
+                  </button>
+                  <button mat-icon-button (click)="cancelAddCard()">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                </div>
+              </div>
+            } @else {
+              <button class="add-card-btn" (click)="startAddCard(list.id)">
+                <mat-icon>add</mat-icon>
+                Agregar tarjeta
+              </button>
+            }
+          </div>
+
+          <!-- List drag preview -->
+          <div *cdkDragPlaceholder class="list-placeholder"></div>
+        </div>
+      }
+
+      <!-- Add list -->
+      <div class="list-wrapper list-wrapper--add">
+        @if (addingList()) {
+          <div class="list-card add-list-form">
+            <input
+              id="new-list-input"
+              class="list-title-input"
+              [(ngModel)]="newListTitle"
+              placeholder="Título de la lista..."
+              (keydown.enter)="confirmAddList()"
+              (keydown.escape)="cancelAddList()"
+            />
+            <div class="add-list-actions">
+              <button mat-raised-button color="primary" (click)="confirmAddList()" [disabled]="!newListTitle().trim()">
+                Agregar lista
+              </button>
+              <button mat-icon-button (click)="cancelAddList()">
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+          </div>
+        } @else {
+          <button class="add-list-btn" (click)="startAddList()">
+            <mat-icon>add</mat-icon>
+            Agregar lista
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+}
