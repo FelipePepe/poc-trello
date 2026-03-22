@@ -4,11 +4,8 @@ import * as CardsController from '../controllers/cards.controller';
 
 const router = Router();
 
-// PATCH /api/lists/:id/reorder-cards
-router.patch('/:id/reorder-cards', (req, res) => {
-  req.params.listId = req.params.id;
-  CardsController.reorderCards(req, res);
-});
+// PATCH /api/lists/:listId/reorder-cards
+router.patch('/:listId/reorder-cards', CardsController.reorderCards);
 
 // PUT /api/lists/:id
 router.put('/:id', ListsController.updateList);
