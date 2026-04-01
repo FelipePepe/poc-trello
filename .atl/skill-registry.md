@@ -1,54 +1,61 @@
 # Skill Registry — poc-trello
 
-Generated: 2026-03-22
+Generated: 2026-04-01
 
 ## Project: poc-trello
 
-**Stack**: Angular 21 + TypeScript Express API  
-**Persistence**: engram
+Stack: Angular 21 + Express + TypeScript + OpenAPI 3.0  
+Persistence: engram
 
 ---
 
-## Available Skills
+## Sources Scanned
 
-### Domain Skills (auto-load by context)
+- User-level skill dirs: `~/.claude/skills`, `~/.config/opencode/skills`, `~/.gemini/skills`, `~/.cursor/skills`, `~/.copilot/skills`
+- Project-level skill dirs: `.claude/skills`, `.gemini/skills`, `.agent/skills`, `skills` (none present)
+- Dedupe policy: project-level wins; for user-level duplicates, kept canonical path from `~/.copilot/skills` when available
+- Exclusions: `sdd-*`, `_shared`, `skill-registry`
 
-| Skill | Path | Trigger |
-|-------|------|---------|
-| `go-testing` | `~/.copilot/skills/go-testing/SKILL.md` | Go tests, Bubbletea TUI testing, teatest |
-| `vercel-react-best-practices` | `~/.agents/skills/vercel-react-best-practices/SKILL.md` | React/Next.js performance, components, data fetching |
-| `webapp-testing` | `~/.agents/skills/webapp-testing/SKILL.md` | Playwright, browser testing, UI verification |
-| `sentry-react-setup` | `~/.agents/skills/sentry-react-setup/SKILL.md` | Add Sentry to React/Angular, error monitoring |
-| `sentry-fix-issues` | `~/.agents/skills/sentry-fix-issues/SKILL.md` | Fix Sentry errors, debug production issues |
-| `sentry-setup-logging` | `~/.agents/skills/sentry-setup-logging/SKILL.md` | Sentry structured logging, Pino/Winston integration |
-| `skill-creator` | `~/.copilot/skills/skill-creator/SKILL.md` | Creating new AI agent skills |
-| `engram-sync` | `~/.claude/skills/engram-sync/SKILL.md` | Sync Engram memory across machines via Git |
+---
 
-### GitFlow Skills
+## Available Skills (Non-SDD)
 
-| Skill | Path | Trigger |
-|-------|------|---------|
-| `gitflow` | `~/.agents/skills/gitflow/SKILL.md` | GitFlow branching model, conventions |
-| `gitflow-feature` | `~/.agents/skills/gitflow-feature/SKILL.md` | Feature branch lifecycle |
-| `gitflow-hotfix` | `~/.agents/skills/gitflow-hotfix/SKILL.md` | Hotfix branch, critical production patches |
-| `gitflow-release` | `~/.agents/skills/gitflow-release/SKILL.md` | Release branch lifecycle |
-| `find-skills` | `~/.agents/skills/find-skills/SKILL.md` | Discover installable skills |
-
-### SDD Skills (orchestrator-managed)
-
-| Skill | Path |
-|-------|------|
-| `sdd-explore` | `~/.copilot/skills/sdd-explore/SKILL.md` |
-| `sdd-propose` | `~/.copilot/skills/sdd-propose/SKILL.md` |
-| `sdd-spec` | `~/.copilot/skills/sdd-spec/SKILL.md` |
-| `sdd-design` | `~/.copilot/skills/sdd-design/SKILL.md` |
-| `sdd-tasks` | `~/.copilot/skills/sdd-tasks/SKILL.md` |
-| `sdd-apply` | `~/.copilot/skills/sdd-apply/SKILL.md` |
-| `sdd-verify` | `~/.copilot/skills/sdd-verify/SKILL.md` |
-| `sdd-archive` | `~/.copilot/skills/sdd-archive/SKILL.md` |
+| Skill            | Path                                        | Trigger                                                           |
+| ---------------- | ------------------------------------------- | ----------------------------------------------------------------- |
+| `branch-pr`      | `~/.copilot/skills/branch-pr/SKILL.md`      | Creating/opening pull requests and preparing changes for review   |
+| `go-testing`     | `~/.copilot/skills/go-testing/SKILL.md`     | Writing Go tests, Bubbletea/teatest patterns, test coverage       |
+| `issue-creation` | `~/.copilot/skills/issue-creation/SKILL.md` | Creating GitHub issues (bug reports/feature requests)             |
+| `judgment-day`   | `~/.copilot/skills/judgment-day/SKILL.md`   | Dual adversarial review when asked for judgment day / dual review |
+| `skill-creator`  | `~/.copilot/skills/skill-creator/SKILL.md`  | Creating or documenting new AI skills/instructions                |
+| `engram-sync`    | `~/.claude/skills/engram-sync/SKILL.md`     | Syncing Engram memory across machines via Git                     |
 
 ---
 
 ## Project Convention Files
 
-None found at project root. Global conventions in `~/.claude/CLAUDE.md`.
+- `AGENTS.md` (index, symlink)
+- `.github/copilot-instructions.md` (referenced by `AGENTS.md`)
+
+---
+
+## Compact Rules
+
+### Angular Frontend
+
+- Use standalone components only (no NgModules)
+- Use `inject()` in class body and signals for local UI state
+- Keep HTTP calls in services and consume via observables
+- Respect strict mode and strict templates
+
+### Express Backend
+
+- Use functional controllers with early returns after `res.status().json()`
+- Keep DTOs typed with `Pick`/`Partial`; avoid `any`
+- Use UUID v4 for IDs and ISO timestamps via `new Date().toISOString()`
+- Keep REST style with nested and standalone routes as currently organized
+
+### Workflow
+
+- Do not run `npm run build` automatically after edits
+- Use SDD for new features/refactors/architecture changes
+- Persist SDD artifacts in Engram topic keys for cross-session continuity
