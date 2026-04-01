@@ -15,6 +15,13 @@
       "when": 1774173983436,
       "tag": "0001_famous_jigsaw",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1775070540139,
+      "tag": "0002_bent_star_brand",
+      "breakpoints": true
     }
   ]
 }

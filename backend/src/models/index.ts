@@ -6,6 +6,7 @@ export interface Label {
 
 export interface Board {
   id: string;
+  ownerId: string | null;
   title: string;
   description: string;
   background: string;
@@ -42,7 +43,12 @@ export type UpdateBoardDto = Partial<CreateBoardDto>;
 export type CreateListDto = { title: string };
 export type UpdateListDto = Partial<CreateListDto> & { position?: number };
 
-export type CreateCardDto = { title: string; description?: string; dueDate?: string; labels?: Label[] };
+export type CreateCardDto = {
+  title: string;
+  description?: string;
+  dueDate?: string;
+  labels?: Label[];
+};
 export type UpdateCardDto = Partial<CreateCardDto & { position: number; listId: string }>;
 
 export type CustomFieldType = 'text' | 'number' | 'checkbox' | 'date' | 'select';
@@ -73,3 +79,5 @@ export type CreateCustomFieldDto = Pick<CustomField, 'name' | 'type'> & {
 };
 export type UpdateCustomFieldDto = Partial<Pick<CustomField, 'name' | 'options' | 'position'>>;
 export type UpsertCardFieldValueDto = Pick<CardFieldValue, 'value'>;
+
+export * from './auth';

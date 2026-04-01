@@ -3,6 +3,33 @@ export interface AuthUser {
   name: string;
 }
 
+export interface AuthenticatedUser extends AuthUser {
+  id: string;
+  mfaEnabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StoredAuthUser extends AuthenticatedUser {
+  passwordHash: string;
+  mfaSecret: string | null;
+}
+
+export interface AuthSession {
+  id: string;
+  userId: string;
+  tokenId: string;
+  expiresAt: string;
+  revokedAt: string | null;
+  lastUsedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CreateAuthSessionDto = Pick<AuthSession, 'userId' | 'tokenId' | 'expiresAt'> & {
+  lastUsedAt?: string | null;
+};
+
 export interface LoginDto {
   email: string;
   password: string;

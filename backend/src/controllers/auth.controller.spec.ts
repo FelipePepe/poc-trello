@@ -79,7 +79,7 @@ describe('auth.controller', () => {
   it('mfaSetup returns provisioning payload', async () => {
     vi.spyOn(jwt, 'verify').mockReturnValue({ type: 'mfa_pending' } as never);
     vi.mocked(otp.generateURI).mockReturnValue('otpauth://totp/Trello');
-    vi.spyOn(QRCode, 'toDataURL').mockResolvedValue('data:image/png;base64,qrcode');
+    vi.spyOn(QRCode, 'toDataURL').mockResolvedValue('data:image/png;base64,qrcode' as never);
     const { res, json } = createMockResponse();
 
     await mfaSetup({ headers: { authorization: 'Bearer temp' } } as unknown as Request, res);
