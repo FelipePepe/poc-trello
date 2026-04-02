@@ -31,7 +31,7 @@
     } @else {
       <div class="boards-grid">
         @for (board of boards(); track board.id) {
-          <a [routerLink]="['/board', board.id]" class="board-card-link">
+          <a [routerLink]="['/boards', board.id]" class="board-card-link">
             <div
               class="board-card"
               [style.background]="board.background"
@@ -58,7 +58,14 @@
           </a>
         }
 
-        <div class="board-card board-card--add" (click)="openCreateDialog()">
+        <div
+          class="board-card board-card--add"
+          role="button"
+          tabindex="0"
+          (click)="openCreateDialog()"
+          (keydown.enter)="openCreateDialog()"
+          (keydown.space)="openCreateDialog()"
+        >
           <mat-icon>add</mat-icon>
           <span>Crear nuevo tablero</span>
         </div>

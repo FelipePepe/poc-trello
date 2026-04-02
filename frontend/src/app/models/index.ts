@@ -58,6 +58,20 @@ export interface Card {
   customFieldValues?: CardFieldValue[];
 }
 
+export interface AuthenticatedUser {
+  id: string;
+  email: string;
+  name: string;
+}
+
+export interface LoginResponse {
+  mfaRequired?: boolean;
+  tempToken?: string;
+  accessToken?: string;
+  refreshToken?: string;
+  user?: AuthenticatedUser;
+}
+
 export type CreateCustomFieldDto = {
   name: string;
   type: CustomFieldType;

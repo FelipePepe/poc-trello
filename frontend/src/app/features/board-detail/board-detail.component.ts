@@ -1,12 +1,5 @@
-import {
-  Component,
-  inject,
-  signal,
-  computed,
-  OnInit,
-  OnDestroy,
-} from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import {
@@ -36,7 +29,7 @@ import { BoardSettingsDialogComponent } from './board-settings-dialog/board-sett
   selector: 'app-board-detail',
   standalone: true,
   imports: [
-    CommonModule,
+    DatePipe,
     RouterModule,
     FormsModule,
     DragDropModule,
@@ -76,9 +69,7 @@ export class BoardDetailComponent implements OnInit, OnDestroy {
   editingBoardTitle = signal(false);
   boardTitle = signal('');
 
-  listConnections = computed(() =>
-    this.lists().map((l) => `list-${l.id}`)
-  );
+  listConnections = computed(() => this.lists().map((l) => `list-${l.id}`));
 
   private boardId!: string;
 
@@ -108,7 +99,7 @@ export class BoardDetailComponent implements OnInit, OnDestroy {
         },
         error: () => {
           this.snackBar.open('Error al cargar el tablero', 'Cerrar', { duration: 3000 });
-          this.router.navigate(['/']);
+          this.router.navigate(['/boards']);
         },
       });
   }
@@ -147,7 +138,10 @@ export class BoardDetailComponent implements OnInit, OnDestroy {
     moveItemInArray(updated, event.previousIndex, event.currentIndex);
     this.lists.set(updated);
     this.listsService
-      .reorder(this.boardId, updated.map((l) => l.id))
+      .reorder(
+        this.boardId,
+        updated.map((l) => l.id),
+      )
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         error: () => {
@@ -170,7 +164,10 @@ export class BoardDetailComponent implements OnInit, OnDestroy {
       map[targetListId] = cards;
       this.cardsByList.set(map);
       this.cardsService
-        .reorder(targetListId, cards.map((c) => c.id))
+        .reorder(
+          targetListId,
+          cards.map((c) => c.id),
+        )
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           error: () => {
@@ -250,9 +247,7 @@ export class BoardDetailComponent implements OnInit, OnDestroy {
     }
     this.listsService.update(list.id, { title }).subscribe({
       next: (updated) => {
-        this.lists.update((prev) =>
-          prev.map((l) => (l.id === list.id ? updated : l))
-        );
+        this.lists.update((prev) => prev.map((l) => (l.id === list.id ? updated : l)));
         this.editingListId.set(null);
       },
       error: () => this.snackBar.open('Error al actualizar lista', 'Cerrar', { duration: 3000 }),
@@ -334,9 +329,7 @@ export class BoardDetailComponent implements OnInit, OnDestroy {
           const next = { ...prev };
           // remove from old list if moved
           if (updated.listId === card.listId) {
-            next[card.listId] = next[card.listId].map((c) =>
-              c.id === card.id ? updated : c
-            );
+            next[card.listId] = next[card.listId].map((c) => (c.id === card.id ? updated : c));
           } else {
             next[card.listId] = next[card.listId].filter((c) => c.id !== card.id);
             next[updated.listId] = [...(next[updated.listId] ?? []), updated];
