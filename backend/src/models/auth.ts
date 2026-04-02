@@ -40,6 +40,10 @@ export interface MfaVerifyDto {
   code: string;
 }
 
+export interface ReconfigureMfaDto {
+  currentCode: string;
+}
+
 export interface LoginResponse {
   mfaRequired: true;
   tempToken: string;

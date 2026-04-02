@@ -61,7 +61,7 @@ describe('LoginComponent', () => {
     component.onSubmit();
 
     expect(navigate).toHaveBeenCalledWith(['/mfa-verify'], {
-      state: { tempToken: 'temp-123' },
+      state: { tempToken: 'temp-123', requiresMfaSetup: false },
     });
   });
 

@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
-import type { AuthenticatedUser, LoginResponse } from '../models';
+import type { AuthenticatedUser, LoginResponse, MfaSetupResponse } from '../models';
 
 const STORAGE_KEYS = {
   accessToken: 'auth_access_token',
@@ -19,6 +19,13 @@ type AuthSessionResponse = {
 
 type LogoutResponse = {
   message: string;
+};
+
+type MfaProvisioningResponse = {
+  secret: string;
+  otpauthUrl: string;
+  qrDataUrl: string;
+  manualEntry: string;
 };
 
 @Injectable({ providedIn: 'root' })
@@ -47,6 +54,12 @@ export class AuthService {
     );
   }
 
+  mfaSetup(tempToken: string): Observable<MfaSetupResponse> {
+    return this.http.get<MfaSetupResponse>('/api/auth/mfa/setup', {
+      headers: { Authorization: `Bearer ${tempToken}` },
+    });
+  }
+
   mfaVerify(tempToken: string, code: string): Observable<AuthSessionResponse> {
     return this.http
       .post<AuthSessionResponse>('/api/auth/mfa/verify', { tempToken, code })
@@ -71,6 +84,10 @@ export class AuthService {
           this.storeSession(response.accessToken, response.refreshToken, response.user),
         ),
       );
+  }
+
+  reconfigureMfa(currentCode: string): Observable<MfaProvisioningResponse> {
+    return this.http.post<MfaProvisioningResponse>('/api/auth/mfa/reconfigure', { currentCode });
   }
 
   logout(): Observable<LogoutResponse> {

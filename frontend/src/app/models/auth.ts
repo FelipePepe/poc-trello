@@ -15,7 +15,11 @@ export interface MfaVerifyDto {
 
 export interface LoginResponse {
   mfaRequired: boolean;
-  tempToken: string;
+  tempToken?: string;
+  requiresMfaSetup?: boolean;
+  accessToken?: string;
+  refreshToken?: string;
+  user?: AuthUser;
 }
 
 export interface AuthResponse {

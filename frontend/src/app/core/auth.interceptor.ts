@@ -4,6 +4,7 @@ import { catchError, finalize, map, Observable, shareReplay, switchMap, throwErr
 import { AuthService } from '../services/auth.service';
 
 const REFRESH_ENDPOINT = '/api/auth/refresh';
+const AUTH_PUBLIC_ENDPOINTS = ['/api/auth/login', '/api/auth/mfa/verify', '/api/auth/mfa/setup'];
 
 let refreshRequest$: Observable<string> | null = null;
 
@@ -22,7 +23,11 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(requestWithAuth).pipe(
     catchError((error) => {
-      if (error.status !== 401 || req.url.includes(REFRESH_ENDPOINT)) {
+      const isPublicAuthEndpoint = AUTH_PUBLIC_ENDPOINTS.some((endpoint) =>
+        req.url.includes(endpoint),
+      );
+
+      if (error.status !== 401 || req.url.includes(REFRESH_ENDPOINT) || isPublicAuthEndpoint) {
         return throwError(() => error);
       }
 

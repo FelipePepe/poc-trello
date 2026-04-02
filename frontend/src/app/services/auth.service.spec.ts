@@ -147,4 +147,29 @@ describe('AuthService', () => {
     expect(service.currentUser()).toBeNull();
     expect(navigate).toHaveBeenCalledWith(['/login']);
   });
+
+  it('reconfigureMfa posts currentCode and returns provisioning payload', () => {
+    let responseBody: unknown;
+    service.reconfigureMfa('123456').subscribe((response) => {
+      responseBody = response;
+    });
+
+    const req = httpMock!.expectOne('/api/auth/mfa/reconfigure');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ currentCode: '123456' });
+
+    req.flush({
+      secret: 'NEWBASE32SECRET',
+      otpauthUrl: 'otpauth://totp/Trello',
+      qrDataUrl: 'data:image/png;base64,qr',
+      manualEntry: 'Cuenta: a@a.com\nClave: NEWBASE32SECRET',
+    });
+
+    expect(responseBody).toEqual(
+      expect.objectContaining({
+        secret: 'NEWBASE32SECRET',
+        qrDataUrl: 'data:image/png;base64,qr',
+      }),
+    );
+  });
 });

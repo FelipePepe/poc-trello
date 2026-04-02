@@ -127,4 +127,68 @@ describe('authInterceptor', () => {
     await expect(firstValueFrom(result$)).rejects.toBeTruthy();
     expect(onAuthenticationFailure).toHaveBeenCalled();
   });
+
+  it('does not trigger refresh when /api/auth/login returns 401', async () => {
+    const refresh = vi.fn();
+    const onAuthenticationFailure = vi.fn();
+
+    TestBed.configureTestingModule({
+      providers: [
+        {
+          provide: AuthService,
+          useValue: {
+            getAccessToken: () => 'expired-access',
+            getRefreshToken: () => 'refresh-token',
+            refresh,
+            onAuthenticationFailure,
+          },
+        },
+      ],
+    });
+
+    const req = new HttpRequest('POST', '/api/auth/login', {
+      email: 'admin@example.com',
+      password: 'admin123',
+    });
+
+    const next = vi.fn(() => throwError(() => new HttpErrorResponse({ status: 401 })));
+
+    const result$ = TestBed.runInInjectionContext(() => authInterceptor(req, next));
+
+    await expect(firstValueFrom(result$)).rejects.toBeTruthy();
+    expect(refresh).not.toHaveBeenCalled();
+    expect(onAuthenticationFailure).not.toHaveBeenCalled();
+  });
+
+  it('does not trigger refresh when /api/auth/mfa/verify returns 401', async () => {
+    const refresh = vi.fn();
+    const onAuthenticationFailure = vi.fn();
+
+    TestBed.configureTestingModule({
+      providers: [
+        {
+          provide: AuthService,
+          useValue: {
+            getAccessToken: () => 'expired-access',
+            getRefreshToken: () => 'refresh-token',
+            refresh,
+            onAuthenticationFailure,
+          },
+        },
+      ],
+    });
+
+    const req = new HttpRequest('POST', '/api/auth/mfa/verify', {
+      tempToken: 'temp-token',
+      code: '123456',
+    });
+
+    const next = vi.fn(() => throwError(() => new HttpErrorResponse({ status: 401 })));
+
+    const result$ = TestBed.runInInjectionContext(() => authInterceptor(req, next));
+
+    await expect(firstValueFrom(result$)).rejects.toBeTruthy();
+    expect(refresh).not.toHaveBeenCalled();
+    expect(onAuthenticationFailure).not.toHaveBeenCalled();
+  });
 });
