@@ -58,12 +58,18 @@ export interface MfaSetupResponse {
 }
 
 export interface JwtTempPayload {
-  sub: string;
+  sub: string; // userId
   type: 'mfa_pending';
 }
 
 export interface JwtAccessPayload {
-  sub: string;
+  sub: string; // userId
   email: string;
+  name: string;
+  sid: string; // sessionId
   type: 'access';
+}
+
+export interface RefreshDto {
+  refreshToken: string;
 }
