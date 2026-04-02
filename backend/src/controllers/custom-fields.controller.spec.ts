@@ -1,5 +1,5 @@
 import type { Request } from 'express';
-import { createMockResponse } from '../test-utils/http-mocks';
+import { createMockResponse, createMockRequest } from '../test-utils/http-mocks';
 import {
   getFieldsByBoard,
   createField,
@@ -10,6 +10,7 @@ import {
 } from './custom-fields.controller';
 import { customFieldsRepo } from '../db/repositories/custom-fields.repo';
 import { cardFieldValuesRepo } from '../db/repositories/card-field-values.repo';
+import { authChecksRepo } from '../db/repositories/auth-checks.repo';
 
 vi.mock('../db/repositories/custom-fields.repo', () => ({
   customFieldsRepo: {
@@ -27,16 +28,28 @@ vi.mock('../db/repositories/card-field-values.repo', () => ({
   },
 }));
 
+vi.mock('../db/repositories/auth-checks.repo', () => ({
+  authChecksRepo: {
+    isBoardOwner: vi.fn(),
+    isCustomFieldBoardOwner: vi.fn(),
+    isCardBoardOwner: vi.fn(),
+  },
+}));
+
 describe('custom-fields.controller', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default: authorization checks pass (user is owner)
+    vi.mocked(authChecksRepo.isBoardOwner).mockResolvedValue(true);
+    vi.mocked(authChecksRepo.isCustomFieldBoardOwner).mockResolvedValue(true);
+    vi.mocked(authChecksRepo.isCardBoardOwner).mockResolvedValue(true);
   });
 
   it('getFieldsByBoard returns fields', async () => {
     vi.mocked(customFieldsRepo.findByBoardId).mockResolvedValue([{ id: 'f1' }] as never);
     const { res, json } = createMockResponse();
 
-    await getFieldsByBoard({ params: { boardId: 'b1' } } as unknown as Request, res);
+    await getFieldsByBoard(createMockRequest({ params: { boardId: 'b1' } }), res);
 
     expect(json).toHaveBeenCalledWith([{ id: 'f1' }]);
   });
@@ -104,7 +117,7 @@ describe('custom-fields.controller', () => {
     vi.mocked(customFieldsRepo.remove).mockResolvedValue(true);
     const { res, status } = createMockResponse();
 
-    await deleteField({ params: { id: 'f1' } } as unknown as Request, res);
+    await deleteField(createMockRequest({ params: { id: 'f1' } }), res);
 
     expect(status).toHaveBeenCalledWith(204);
   });
@@ -137,7 +150,7 @@ describe('custom-fields.controller', () => {
     vi.mocked(customFieldsRepo.remove).mockResolvedValue(false);
     const { res, status } = createMockResponse();
 
-    await deleteField({ params: { id: 'f1' } } as unknown as Request, res);
+    await deleteField(createMockRequest({ params: { id: 'f1' } }), res);
 
     expect(status).toHaveBeenCalledWith(404);
   });
@@ -173,7 +186,7 @@ describe('custom-fields.controller', () => {
   it('deleteFieldValue always returns 204 on success', async () => {
     const { res, status } = createMockResponse();
 
-    await deleteFieldValue({ params: { cardId: 'c1', fieldId: 'f1' } } as unknown as Request, res);
+    await deleteFieldValue(createMockRequest({ params: { cardId: 'c1', fieldId: 'f1' } }), res);
 
     expect(cardFieldValuesRepo.remove).toHaveBeenCalledWith('c1', 'f1');
     expect(status).toHaveBeenCalledWith(204);
@@ -183,7 +196,7 @@ describe('custom-fields.controller', () => {
     vi.mocked(customFieldsRepo.findByBoardId).mockRejectedValue(new Error('db error'));
     const { res, status } = createMockResponse();
 
-    await getFieldsByBoard({ params: { boardId: 'b1' } } as unknown as Request, res);
+    await getFieldsByBoard(createMockRequest({ params: { boardId: 'b1' } }), res);
 
     expect(status).toHaveBeenCalledWith(500);
   });

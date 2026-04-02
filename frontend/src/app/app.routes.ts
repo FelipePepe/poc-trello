@@ -1,28 +1,33 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/auth.guard';
+import { LoginComponent } from './features/auth/login.component';
+import { MfaVerifyComponent } from './features/auth/mfa-verify.component';
+import { BoardsComponent } from './features/boards/boards.component';
+import { BoardDetailComponent } from './features/board-detail/board-detail.component';
 
 export const routes: Routes = [
   {
     path: 'login',
-    loadComponent: () =>
-      import('./features/auth/login/login.component').then((m) => m.LoginComponent),
+    component: LoginComponent,
     title: 'Iniciar sesión',
   },
   {
-    path: '',
+    path: 'mfa-verify',
+    component: MfaVerifyComponent,
+    title: 'Verificación MFA',
+  },
+  {
+    path: 'boards',
     canActivate: [authGuard],
-    loadComponent: () =>
-      import('./features/boards/boards.component').then((m) => m.BoardsComponent),
+    component: BoardsComponent,
     title: 'Tableros — Trello Clone',
   },
   {
-    path: 'board/:id',
+    path: 'boards/:id',
     canActivate: [authGuard],
-    loadComponent: () =>
-      import('./features/board-detail/board-detail.component').then(
-        (m) => m.BoardDetailComponent
-      ),
+    component: BoardDetailComponent,
     title: 'Tablero — Trello Clone',
   },
-  { path: '**', redirectTo: '' },
+  { path: '', redirectTo: 'boards', pathMatch: 'full' },
+  { path: '**', redirectTo: 'boards' },
 ];

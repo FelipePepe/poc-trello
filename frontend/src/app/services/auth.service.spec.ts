@@ -48,46 +48,128 @@ describe('AuthService', () => {
 
   afterEach(() => httpMock?.verify());
 
-  it('setSession updates signals and localStorage', () => {
-    service.setSession('token-1', { email: 'a@a.com', name: 'Admin' });
+  it('loads current user from storage on startup', () => {
+    storage.set('auth_user', JSON.stringify({ id: 'u1', email: 'a@a.com', name: 'Admin' }));
 
-    expect(service.token()).toBe('token-1');
-    expect(service.user()).toEqual({ email: 'a@a.com', name: 'Admin' });
-    expect(service.isAuthenticated()).toBe(true);
+    let rehydratedService: AuthService | undefined;
+    TestBed.runInInjectionContext(() => {
+      rehydratedService = new AuthService();
+    });
+
+    expect(rehydratedService?.currentUser()).toEqual({
+      id: 'u1',
+      email: 'a@a.com',
+      name: 'Admin',
+    });
+    expect(rehydratedService?.isAuthenticated()).toBe(true);
   });
 
-  it('logout clears session and navigates to login', () => {
-    service.setSession('token-1', { email: 'a@a.com', name: 'Admin' });
-
-    service.logout();
-
-    expect(service.token()).toBeNull();
-    expect(service.user()).toBeNull();
-    expect(navigate).toHaveBeenCalledWith(['/login']);
-  });
-
-  it('getMfaSetup adds Authorization header', () => {
-    service.getMfaSetup('temp-token').subscribe();
-
-    const req = httpMock!.expectOne('/api/auth/mfa/setup');
-    expect(req.request.method).toBe('GET');
-    expect(req.request.headers.get('Authorization')).toBe('Bearer temp-token');
-    req.flush({ secret: 'x', otpauthUrl: 'y', qrDataUrl: 'z', manualEntry: 'w' });
-  });
-
-  it('login posts credentials to auth endpoint', () => {
-    service.login({ email: 'admin@example.com', password: 'admin123' }).subscribe();
+  it('login stores full session when MFA is not required', () => {
+    service.login('admin@example.com', 'admin123').subscribe();
 
     const req = httpMock!.expectOne('/api/auth/login');
     expect(req.request.method).toBe('POST');
-    req.flush({ mfaRequired: true, tempToken: 'temp' });
+    expect(req.request.body).toEqual({ email: 'admin@example.com', password: 'admin123' });
+    req.flush({
+      accessToken: 'access-1',
+      refreshToken: 'refresh-1',
+      user: { id: 'u1', email: 'admin@example.com', name: 'Admin' },
+    });
+
+    expect(service.getAccessToken()).toBe('access-1');
+    expect(service.getRefreshToken()).toBe('refresh-1');
+    expect(service.currentUser()).toEqual({ id: 'u1', email: 'admin@example.com', name: 'Admin' });
   });
 
-  it('verifyMfa posts token and code', () => {
-    service.verifyMfa({ tempToken: 'temp', code: '123456' }).subscribe();
+  it('login does not store tokens when MFA is required', () => {
+    service.login('admin@example.com', 'admin123').subscribe();
+
+    const req = httpMock!.expectOne('/api/auth/login');
+    req.flush({ mfaRequired: true, tempToken: 'temp-1' });
+
+    expect(service.getAccessToken()).toBeNull();
+    expect(service.getRefreshToken()).toBeNull();
+    expect(service.currentUser()).toBeNull();
+  });
+
+  it('mfaVerify stores full session after successful verification', () => {
+    service.mfaVerify('temp-1', '123456').subscribe();
 
     const req = httpMock!.expectOne('/api/auth/mfa/verify');
     expect(req.request.method).toBe('POST');
-    req.flush({ accessToken: 'token', user: { email: 'admin@example.com', name: 'Admin' } });
+    expect(req.request.body).toEqual({ tempToken: 'temp-1', code: '123456' });
+    req.flush({
+      accessToken: 'access-2',
+      refreshToken: 'refresh-2',
+      user: { id: 'u2', email: 'mfa@example.com', name: 'MFA User' },
+    });
+
+    expect(service.getAccessToken()).toBe('access-2');
+    expect(service.getRefreshToken()).toBe('refresh-2');
+    expect(service.currentUser()).toEqual({ id: 'u2', email: 'mfa@example.com', name: 'MFA User' });
+  });
+
+  it('refresh stores new tokens and user', () => {
+    service.refresh('old-refresh').subscribe();
+
+    const req = httpMock!.expectOne('/api/auth/refresh');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ refreshToken: 'old-refresh' });
+    req.flush({
+      accessToken: 'access-new',
+      refreshToken: 'refresh-new',
+      user: { id: 'u3', email: 'refresh@example.com', name: 'Refresh User' },
+    });
+
+    expect(service.getAccessToken()).toBe('access-new');
+    expect(service.getRefreshToken()).toBe('refresh-new');
+    expect(service.currentUser()).toEqual({
+      id: 'u3',
+      email: 'refresh@example.com',
+      name: 'Refresh User',
+    });
+  });
+
+  it('logout clears session and navigates to login', () => {
+    storage.set('auth_access_token', 'access-1');
+    storage.set('auth_refresh_token', 'refresh-1');
+    storage.set('auth_user', JSON.stringify({ id: 'u1', email: 'a@a.com', name: 'Admin' }));
+
+    service = TestBed.inject(AuthService);
+    service.logout().subscribe();
+
+    const req = httpMock!.expectOne('/api/auth/logout');
+    expect(req.request.method).toBe('POST');
+    req.flush({ message: 'ok' });
+
+    expect(service.getAccessToken()).toBeNull();
+    expect(service.getRefreshToken()).toBeNull();
+    expect(service.currentUser()).toBeNull();
+    expect(navigate).toHaveBeenCalledWith(['/login']);
+  });
+
+  it('reconfigureMfa posts currentCode and returns provisioning payload', () => {
+    let responseBody: unknown;
+    service.reconfigureMfa('123456').subscribe((response) => {
+      responseBody = response;
+    });
+
+    const req = httpMock!.expectOne('/api/auth/mfa/reconfigure');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ currentCode: '123456' });
+
+    req.flush({
+      secret: 'NEWBASE32SECRET',
+      otpauthUrl: 'otpauth://totp/Trello',
+      qrDataUrl: 'data:image/png;base64,qr',
+      manualEntry: 'Cuenta: a@a.com\nClave: NEWBASE32SECRET',
+    });
+
+    expect(responseBody).toEqual(
+      expect.objectContaining({
+        secret: 'NEWBASE32SECRET',
+        qrDataUrl: 'data:image/png;base64,qr',
+      }),
+    );
   });
 });

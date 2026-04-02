@@ -20,7 +20,7 @@
         en la lista <strong>{{ currentListName }}</strong>
       </p>
     </div>
-    <button mat-icon-button mat-dialog-close class="close-btn">
+    <button mat-icon-button (click)="dismiss()" class="close-btn">
       <mat-icon>close</mat-icon>
     </button>
   </div>
@@ -108,7 +108,9 @@
                     type="checkbox"
                     class="cf-checkbox"
                     [checked]="fieldValues().get(field.id) === 'true'"
-                    (change)="updateFieldValue(field.id, $any($event.target).checked ? 'true' : null)"
+                    (change)="
+                      updateFieldValue(field.id, $any($event.target).checked ? 'true' : null)
+                    "
                   />
                   <span class="cf-checkbox-text">
                     {{ fieldValues().get(field.id) === 'true' ? 'Sí' : 'No' }}
@@ -130,7 +132,7 @@
                   (change)="updateFieldValue(field.id, $any($event.target).value || null)"
                 >
                   <option value="">— Seleccioná —</option>
-                  @for (opt of (field.options ?? []); track opt) {
+                  @for (opt of field.options ?? []; track opt) {
                     <option [value]="opt">{{ opt }}</option>
                   }
                 </select>
@@ -160,7 +162,12 @@
         <h5 class="sidebar-title">Fecha límite</h5>
         <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
           <mat-label>Seleccioná fecha</mat-label>
-          <input matInput [matDatepicker]="picker" [value]="dueDate()" (dateChange)="dueDate.set($event.value)" />
+          <input
+            matInput
+            [matDatepicker]="picker"
+            [value]="dueDate()"
+            (dateChange)="dueDate.set($event.value)"
+          />
           <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
           <mat-datepicker #picker></mat-datepicker>
         </mat-form-field>
@@ -182,9 +189,18 @@
       Eliminar
     </button>
     <div style="flex: 1"></div>
-    <button mat-button mat-dialog-close>Cancelar</button>
-    <button mat-raised-button color="primary" (click)="save()" [disabled]="!title().trim() || saving()">
-      @if (saving()) { Guardando... } @else { Guardar cambios }
+    <button mat-button (click)="dismiss()">Cancelar</button>
+    <button
+      mat-raised-button
+      color="primary"
+      (click)="save()"
+      [disabled]="!title().trim() || saving()"
+    >
+      @if (saving()) {
+        Guardando...
+      } @else {
+        Guardar cambios
+      }
     </button>
   </div>
 </div>

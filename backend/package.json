@@ -15,6 +15,7 @@
     "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^17.3.1",
     "drizzle-orm": "^0.45.1",
@@ -28,6 +29,7 @@
     "yamljs": "^0.3.0"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.10",

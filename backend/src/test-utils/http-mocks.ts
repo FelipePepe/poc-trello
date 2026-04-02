@@ -1,4 +1,6 @@
 import type { Response } from 'express';
+import type { Request } from 'express';
+import { vi } from 'vitest';
 
 type StatusMock = ReturnType<typeof vi.fn>;
 type JsonMock = ReturnType<typeof vi.fn>;
@@ -26,4 +28,11 @@ export const createMockResponse = (): MockResponse => {
     json,
     send,
   };
+};
+
+export const createMockRequest = (overrides?: Record<string, unknown>): Request => {
+  return {
+    user: { id: 'test-user', email: 'test@test.com', name: 'Test', sessionId: 's1' },
+    ...overrides,
+  } as unknown as Request;
 };
