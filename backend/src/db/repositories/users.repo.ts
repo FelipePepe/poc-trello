@@ -28,4 +28,16 @@ export const usersRepo = {
     const rows = await db.select().from(users).where(eq(users.id, id));
     return rows[0] ? mapRow(rows[0]) : null;
   },
+
+  async updateMfaConfig(id: string, mfaSecret: string, mfaEnabled: boolean): Promise<void> {
+    const db = getDb();
+    await db
+      .update(users)
+      .set({
+        mfaSecret,
+        mfaEnabled,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id));
+  },
 };

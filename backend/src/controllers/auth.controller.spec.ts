@@ -2,12 +2,13 @@ import type { Request } from 'express';
 import jwt from 'jsonwebtoken';
 import QRCode from 'qrcode';
 import { createMockResponse } from '../test-utils/http-mocks';
-import { login, mfaSetup, mfaVerify, me, logout, refresh } from './auth.controller';
+import { login, mfaSetup, mfaVerify, me, logout, refresh, reconfigureMfa } from './auth.controller';
 
 vi.mock('../db/repositories/users.repo', () => ({
   usersRepo: {
     findByEmail: vi.fn(),
     findById: vi.fn(),
+    updateMfaConfig: vi.fn(),
   },
 }));
 
@@ -28,6 +29,7 @@ vi.mock('bcryptjs', () => ({
 }));
 
 vi.mock('otplib', () => ({
+  generateSecret: vi.fn(() => 'NEWBASE32SECRET'),
   generateURI: vi.fn(() => 'otpauth://totp/Trello'),
   verifySync: vi.fn(() => ({ valid: true })),
 }));
@@ -98,7 +100,11 @@ describe('auth.controller', () => {
     vi.spyOn(jwt, 'sign').mockReturnValue('temp-token' as never);
     const { res, json } = createMockResponse();
     await login({ body: { email: mockUser.email, password: 'correct' } } as Request, res);
-    expect(json).toHaveBeenCalledWith({ mfaRequired: true, tempToken: 'temp-token' });
+    expect(json).toHaveBeenCalledWith({
+      mfaRequired: true,
+      tempToken: 'temp-token',
+      requiresMfaSetup: false,
+    });
   });
 
   it('login with MFA disabled creates session and returns accessToken + refreshToken', async () => {
@@ -293,6 +299,54 @@ describe('auth.controller', () => {
       expect.objectContaining({
         accessToken: 'new-access-token',
         refreshToken: expect.any(String),
+      }),
+    );
+  });
+
+  // --- reconfigureMfa ---
+
+  it('reconfigureMfa returns 400 when currentCode is missing', async () => {
+    const { res, status } = createMockResponse();
+    await reconfigureMfa({ body: {}, user: { id: mockUser.id } } as unknown as Request, res);
+    expect(status).toHaveBeenCalledWith(400);
+  });
+
+  it('reconfigureMfa returns 401 when current MFA code is invalid', async () => {
+    vi.mocked(usersRepo.findById).mockResolvedValue(mockUser);
+    vi.mocked(otp.verifySync).mockReturnValue({ valid: false } as never);
+    const { res, status } = createMockResponse();
+
+    await reconfigureMfa(
+      {
+        body: { currentCode: '000000' },
+        user: { id: mockUser.id },
+      } as unknown as Request,
+      res,
+    );
+
+    expect(status).toHaveBeenCalledWith(401);
+  });
+
+  it('reconfigureMfa rotates secret and returns new provisioning payload', async () => {
+    vi.mocked(usersRepo.findById).mockResolvedValue(mockUser);
+    vi.mocked(otp.verifySync).mockReturnValue({ valid: true } as never);
+    vi.mocked(otp.generateURI).mockReturnValue('otpauth://totp/Trello');
+    vi.spyOn(QRCode, 'toDataURL').mockResolvedValue('data:image/png;base64,qrcode' as never);
+    const { res, json } = createMockResponse();
+
+    await reconfigureMfa(
+      {
+        body: { currentCode: '123456' },
+        user: { id: mockUser.id },
+      } as unknown as Request,
+      res,
+    );
+
+    expect(usersRepo.updateMfaConfig).toHaveBeenCalledWith(mockUser.id, 'NEWBASE32SECRET', true);
+    expect(json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        secret: 'NEWBASE32SECRET',
+        otpauthUrl: 'otpauth://totp/Trello',
       }),
     );
   });

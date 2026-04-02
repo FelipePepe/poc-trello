@@ -1,12 +1,13 @@
 import { Request, Response } from 'express';
 import jwt, { type SignOptions } from 'jsonwebtoken';
-import { generateURI, verifySync } from 'otplib';
+import { generateSecret, generateURI, verifySync } from 'otplib';
 import QRCode from 'qrcode';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
 import type {
   LoginDto,
   MfaVerifyDto,
+  ReconfigureMfaDto,
   JwtTempPayload,
   JwtAccessPayload,
   RefreshDto,
@@ -56,7 +57,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       cfg.jwtSecret,
       { expiresIn: '5m' },
     );
-    res.json({ mfaRequired: true, tempToken });
+    res.json({ mfaRequired: true, tempToken, requiresMfaSetup: !user.mfaSecret });
     return;
   }
 
@@ -162,14 +163,22 @@ export const mfaVerify = async (req: Request, res: Response): Promise<void> => {
 
   let isValid = false;
   try {
-    const result = verifySync({ token: code, secret, epochTolerance: 30 });
+    const result = verifySync({ token: code, secret, epochTolerance: 60 });
     isValid = result.valid;
   } catch {
     isValid = false;
   }
   if (!isValid) {
-    res.status(401).json({ message: 'Código MFA inválido' });
+    res
+      .status(401)
+      .json({ message: 'Código incorrecto o expirado. Introduce el código actual de tu app.' });
     return;
+  }
+
+  // If the user had no personal secret yet, persist the one they just verified against
+  // so the QR setup screen won't appear again on future logins.
+  if (!user.mfaSecret) {
+    await usersRepo.updateMfaConfig(user.id, secret, true);
   }
 
   const refreshToken = uuidv4();
@@ -262,5 +271,59 @@ export const refresh = async (req: Request, res: Response): Promise<void> => {
     accessToken,
     refreshToken: newRefreshToken,
     user: { id: user.id, email: user.email, name: user.name },
+  });
+};
+
+export const reconfigureMfa = async (req: Request, res: Response): Promise<void> => {
+  const { currentCode } = req.body as ReconfigureMfaDto;
+  const cfg = getCfg();
+
+  if (!currentCode?.trim()) {
+    res.status(400).json({ message: 'currentCode es requerido' });
+    return;
+  }
+
+  const requesterId = req.user?.id;
+  if (!requesterId) {
+    res.status(401).json({ message: 'Unauthorized' });
+    return;
+  }
+
+  const user = await usersRepo.findById(requesterId);
+  if (!user) {
+    res.status(401).json({ message: 'Usuario no encontrado' });
+    return;
+  }
+
+  const currentSecret = user.mfaSecret || cfg.mfaSecret || process.env['_MFA_SESSION_SECRET'] || '';
+  if (!currentSecret) {
+    res.status(503).json({ message: 'MFA no configurado. Contactá al administrador.' });
+    return;
+  }
+
+  let isCurrentCodeValid = false;
+  try {
+    const result = verifySync({ token: currentCode, secret: currentSecret, epochTolerance: 60 });
+    isCurrentCodeValid = result.valid;
+  } catch {
+    isCurrentCodeValid = false;
+  }
+
+  if (!isCurrentCodeValid) {
+    res.status(401).json({ message: 'Código MFA inválido' });
+    return;
+  }
+
+  const newSecret = generateSecret();
+  await usersRepo.updateMfaConfig(user.id, newSecret, true);
+
+  const otpauthUrl = generateURI({ secret: newSecret, label: user.email, issuer: cfg.appName });
+  const qrDataUrl = await QRCode.toDataURL(otpauthUrl);
+
+  res.json({
+    secret: newSecret,
+    otpauthUrl,
+    qrDataUrl,
+    manualEntry: `Cuenta: ${user.email}\nClave: ${newSecret}`,
   });
 };
