@@ -15,7 +15,14 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { CardsService } from '../../../services/cards.service';
 import { CustomFieldsService } from '../../../services/custom-fields.service';
-import { BoardList, Card, CardFieldValue, CustomField, Label, LABEL_PRESETS } from '../../../models';
+import {
+  BoardList,
+  Card,
+  CardFieldValue,
+  CustomField,
+  Label,
+  LABEL_PRESETS,
+} from '../../../models';
 
 @Component({
   selector: 'app-card-detail-dialog',
@@ -64,17 +71,24 @@ export class CardDetailDialogComponent implements OnInit {
     this.selectedListId.set(card.listId);
     this.labels.set([...card.labels]);
 
-    // Populate field values from embedded data
-    if (card.customFieldValues?.length) {
-      const map = new Map<string, string | null>();
-      card.customFieldValues.forEach((v: CardFieldValue) => map.set(v.fieldId, v.value));
-      this.fieldValues.set(map);
-    }
-
-    // Load board's field definitions
+    // Load board's field definitions and card's saved field values in parallel
     this.customFieldsService.getByBoard(card.boardId).subscribe({
       next: (fields) => this.boardFields.set(fields),
       error: () => this.snackBar.open('Error al cargar campos', 'Cerrar', { duration: 3000 }),
+    });
+
+    // Fetch full card (includes customFieldValues) — the board list endpoint omits them
+    this.cardsService.getById(card.id).subscribe({
+      next: (fullCard) => {
+        if (fullCard.customFieldValues?.length) {
+          const map = new Map<string, string | null>();
+          fullCard.customFieldValues.forEach((v: CardFieldValue) => map.set(v.fieldId, v.value));
+          this.fieldValues.set(map);
+        }
+      },
+      error: () => {
+        /* non-critical: fields just show empty */
+      },
     });
   }
 
@@ -127,6 +141,10 @@ export class CardDetailDialogComponent implements OnInit {
     }
   }
 
+  dismiss(): void {
+    this.dialogRef.close({ fieldValues: this.fieldValues() });
+  }
+
   save(): void {
     const title = this.title().trim();
     if (!title) return;
@@ -145,7 +163,22 @@ export class CardDetailDialogComponent implements OnInit {
       .subscribe({
         next: (updated) => {
           this.saving.set(false);
-          this.dialogRef.close({ updated });
+          // Merge current field values into the returned card so the board
+          // can display chips without a full page reload
+          const customFieldValues: CardFieldValue[] = [];
+          this.fieldValues().forEach((value, fieldId) => {
+            if (value !== null) {
+              customFieldValues.push({
+                id: '',
+                cardId: updated.id,
+                fieldId,
+                value,
+                createdAt: '',
+                updatedAt: '',
+              });
+            }
+          });
+          this.dialogRef.close({ updated: { ...updated, customFieldValues } });
         },
         error: () => {
           this.saving.set(false);
