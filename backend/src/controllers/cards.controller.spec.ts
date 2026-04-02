@@ -1,5 +1,6 @@
 import type { Request } from 'express';
 import { createMockResponse } from '../test-utils/http-mocks';
+import { createMockRequest } from '../test-utils/http-mocks';
 import {
   getCardsByList,
   getCardsByBoard,
@@ -13,6 +14,7 @@ import {
 import { cardsRepo } from '../db/repositories/cards.repo';
 import { listsRepo } from '../db/repositories/lists.repo';
 import { cardFieldValuesRepo } from '../db/repositories/card-field-values.repo';
+import { authChecksRepo } from '../db/repositories/auth-checks.repo';
 
 vi.mock('../db/repositories/cards.repo', () => ({
   cardsRepo: {
@@ -39,16 +41,28 @@ vi.mock('../db/repositories/card-field-values.repo', () => ({
   },
 }));
 
+vi.mock('../db/repositories/auth-checks.repo', () => ({
+  authChecksRepo: {
+    isCardBoardOwner: vi.fn(),
+    isBoardOwner: vi.fn(),
+    isListBoardOwner: vi.fn(),
+  },
+}));
+
 describe('cards.controller', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default: authorization checks pass (user is owner)
+    vi.mocked(authChecksRepo.isCardBoardOwner).mockResolvedValue(true);
+    vi.mocked(authChecksRepo.isBoardOwner).mockResolvedValue(true);
+    vi.mocked(authChecksRepo.isListBoardOwner).mockResolvedValue(true);
   });
 
   it('getCardsByList returns 404 when list is missing', async () => {
     vi.mocked(listsRepo.findById).mockResolvedValue(null);
     const { res, status } = createMockResponse();
 
-    await getCardsByList({ params: { listId: 'l1' } } as unknown as Request, res);
+    await getCardsByList(createMockRequest({ params: { listId: 'l1' } }), res);
 
     expect(status).toHaveBeenCalledWith(404);
   });
@@ -57,7 +71,7 @@ describe('cards.controller', () => {
     vi.mocked(cardsRepo.findByBoard).mockResolvedValue([{ id: 'c1' }] as never);
     const { res, json } = createMockResponse();
 
-    await getCardsByBoard({ params: { boardId: 'b1' } } as unknown as Request, res);
+    await getCardsByBoard(createMockRequest({ params: { boardId: 'b1' } }), res);
 
     expect(json).toHaveBeenCalledWith([{ id: 'c1' }]);
   });
@@ -67,7 +81,7 @@ describe('cards.controller', () => {
     vi.mocked(cardFieldValuesRepo.findByCardId).mockResolvedValue([{ fieldId: 'f1' }] as never);
     const { res, json } = createMockResponse();
 
-    await getCardById({ params: { id: 'c1' } } as unknown as Request, res);
+    await getCardById(createMockRequest({ params: { id: 'c1' } }), res);
 
     expect(json).toHaveBeenCalledWith({ id: 'c1', customFieldValues: [{ fieldId: 'f1' }] });
   });
@@ -75,7 +89,7 @@ describe('cards.controller', () => {
   it('createCard validates title', async () => {
     const { res, status } = createMockResponse();
 
-    await createCard({ params: { listId: 'l1' }, body: { title: '' } } as unknown as Request, res);
+    await createCard(createMockRequest({ params: { listId: 'l1' }, body: { title: '' } }), res);
 
     expect(status).toHaveBeenCalledWith(400);
   });
@@ -85,7 +99,7 @@ describe('cards.controller', () => {
     vi.mocked(cardsRepo.findByList).mockResolvedValue([{ id: 'c1' }] as never);
     const { res, json } = createMockResponse();
 
-    await getCardsByList({ params: { listId: 'l1' } } as unknown as Request, res);
+    await getCardsByList(createMockRequest({ params: { listId: 'l1' } }), res);
 
     expect(json).toHaveBeenCalledWith([{ id: 'c1' }]);
   });
@@ -94,7 +108,7 @@ describe('cards.controller', () => {
     vi.mocked(cardsRepo.findById).mockResolvedValue(null);
     const { res, status } = createMockResponse();
 
-    await getCardById({ params: { id: 'c1' } } as unknown as Request, res);
+    await getCardById(createMockRequest({ params: { id: 'c1' } }), res);
 
     expect(status).toHaveBeenCalledWith(404);
   });
@@ -103,10 +117,7 @@ describe('cards.controller', () => {
     vi.mocked(listsRepo.findById).mockResolvedValue(null);
     const { res, status } = createMockResponse();
 
-    await createCard(
-      { params: { listId: 'l1' }, body: { title: 'Task' } } as unknown as Request,
-      res,
-    );
+    await createCard(createMockRequest({ params: { listId: 'l1' }, body: { title: 'Task' } }), res);
 
     expect(status).toHaveBeenCalledWith(404);
   });
@@ -116,10 +127,7 @@ describe('cards.controller', () => {
     vi.mocked(cardsRepo.create).mockResolvedValue({ id: 'c1', title: 'Task' } as never);
     const { res, status } = createMockResponse();
 
-    await createCard(
-      { params: { listId: 'l1' }, body: { title: 'Task' } } as unknown as Request,
-      res,
-    );
+    await createCard(createMockRequest({ params: { listId: 'l1' }, body: { title: 'Task' } }), res);
 
     expect(status).toHaveBeenCalledWith(201);
   });
@@ -128,7 +136,7 @@ describe('cards.controller', () => {
     vi.mocked(cardsRepo.update).mockResolvedValue(null);
     const { res, status } = createMockResponse();
 
-    await updateCard({ params: { id: 'c1' }, body: { title: 'x' } } as unknown as Request, res);
+    await updateCard(createMockRequest({ params: { id: 'c1' }, body: { title: 'x' } }), res);
 
     expect(status).toHaveBeenCalledWith(404);
   });
@@ -137,7 +145,7 @@ describe('cards.controller', () => {
     vi.mocked(cardsRepo.update).mockResolvedValue({ id: 'c1', title: 'Done' } as never);
     const { res, json } = createMockResponse();
 
-    await updateCard({ params: { id: 'c1' }, body: { title: 'Done' } } as unknown as Request, res);
+    await updateCard(createMockRequest({ params: { id: 'c1' }, body: { title: 'Done' } }), res);
 
     expect(json).toHaveBeenCalledWith({ id: 'c1', title: 'Done' });
   });
@@ -146,7 +154,7 @@ describe('cards.controller', () => {
     vi.mocked(cardsRepo.delete).mockResolvedValue(true);
     const { res, status } = createMockResponse();
 
-    await deleteCard({ params: { id: 'c1' } } as unknown as Request, res);
+    await deleteCard(createMockRequest({ params: { id: 'c1' } }), res);
 
     expect(status).toHaveBeenCalledWith(204);
   });
@@ -155,7 +163,7 @@ describe('cards.controller', () => {
     vi.mocked(cardsRepo.delete).mockResolvedValue(false);
     const { res, status } = createMockResponse();
 
-    await deleteCard({ params: { id: 'c1' } } as unknown as Request, res);
+    await deleteCard(createMockRequest({ params: { id: 'c1' } }), res);
 
     expect(status).toHaveBeenCalledWith(404);
   });
@@ -172,7 +180,7 @@ describe('cards.controller', () => {
     vi.mocked(cardsRepo.move).mockResolvedValue(null);
     const { res, status } = createMockResponse();
 
-    await moveCard({ params: { id: 'c1' }, body: { listId: 'l2' } } as unknown as Request, res);
+    await moveCard(createMockRequest({ params: { id: 'c1' }, body: { listId: 'l2' } }), res);
 
     expect(status).toHaveBeenCalledWith(404);
   });
@@ -182,7 +190,7 @@ describe('cards.controller', () => {
     const { res, json } = createMockResponse();
 
     await moveCard(
-      { params: { id: 'c1' }, body: { listId: 'l2', position: 1 } } as unknown as Request,
+      createMockRequest({ params: { id: 'c1' }, body: { listId: 'l2', position: 1 } }),
       res,
     );
 
@@ -202,7 +210,7 @@ describe('cards.controller', () => {
     const { res, json } = createMockResponse();
 
     await reorderCards(
-      { params: { listId: 'l1' }, body: { orderedIds: ['c2', 'c1'] } } as unknown as Request,
+      createMockRequest({ params: { listId: 'l1' }, body: { orderedIds: ['c2', 'c1'] } }),
       res,
     );
 
@@ -213,8 +221,72 @@ describe('cards.controller', () => {
     vi.mocked(cardsRepo.findByBoard).mockRejectedValue(new Error('db error'));
     const { res, status } = createMockResponse();
 
-    await getCardsByBoard({ params: { boardId: 'b1' } } as unknown as Request, res);
+    await getCardsByBoard(createMockRequest({ params: { boardId: 'b1' } }), res);
 
     expect(status).toHaveBeenCalledWith(500);
+  });
+
+  // Authorization (owner-scope) tests — Phase 3
+  describe('authorization (owner-scope)', () => {
+    it('getCardById returns 403 when user is not the board owner', async () => {
+      vi.mocked(cardsRepo.findById).mockResolvedValue({ id: 'c1' } as never);
+      vi.mocked(authChecksRepo.isCardBoardOwner).mockResolvedValue(false);
+
+      const { res, status } = createMockResponse();
+      const req = {
+        params: { id: 'c1' },
+        user: { id: 'other-user-id', email: 'other@test.com', name: 'Other', sessionId: 's1' },
+      } as unknown as Request;
+
+      await getCardById(req, res);
+
+      expect(status).toHaveBeenCalledWith(403);
+    });
+
+    it('getCardById returns card when user is the board owner', async () => {
+      const card = { id: 'c1', title: 'Task' };
+      vi.mocked(cardsRepo.findById).mockResolvedValue(card as never);
+      vi.mocked(authChecksRepo.isCardBoardOwner).mockResolvedValue(true);
+      vi.mocked(cardFieldValuesRepo.findByCardId).mockResolvedValue([]);
+
+      const { res, json } = createMockResponse();
+      const req = {
+        params: { id: 'c1' },
+        user: { id: 'user-a', email: 'a@test.com', name: 'User A', sessionId: 's1' },
+      } as unknown as Request;
+
+      await getCardById(req, res);
+
+      expect(json).toHaveBeenCalledWith({ ...card, customFieldValues: [] });
+    });
+
+    it('updateCard returns 403 when user is not the board owner', async () => {
+      vi.mocked(authChecksRepo.isCardBoardOwner).mockResolvedValue(false);
+
+      const { res, status } = createMockResponse();
+      const req = {
+        params: { id: 'c1' },
+        body: { title: 'Updated' },
+        user: { id: 'other-user-id', email: 'other@test.com', name: 'Other', sessionId: 's1' },
+      } as unknown as Request;
+
+      await updateCard(req, res);
+
+      expect(status).toHaveBeenCalledWith(403);
+    });
+
+    it('deleteCard returns 403 when user is not the board owner', async () => {
+      vi.mocked(authChecksRepo.isCardBoardOwner).mockResolvedValue(false);
+
+      const { res, status } = createMockResponse();
+      const req = {
+        params: { id: 'c1' },
+        user: { id: 'other-user-id', email: 'other@test.com', name: 'Other', sessionId: 's1' },
+      } as unknown as Request;
+
+      await deleteCard(req, res);
+
+      expect(status).toHaveBeenCalledWith(403);
+    });
   });
 });

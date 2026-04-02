@@ -3,6 +3,7 @@ import { CreateCardDto, UpdateCardDto } from '../models';
 import { cardsRepo } from '../db/repositories/cards.repo';
 import { listsRepo } from '../db/repositories/lists.repo';
 import { cardFieldValuesRepo } from '../db/repositories/card-field-values.repo';
+import { authChecksRepo } from '../db/repositories/auth-checks.repo';
 
 export const getCardsByList = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -12,6 +13,14 @@ export const getCardsByList = async (req: Request, res: Response): Promise<void>
       res.status(404).json({ message: 'List not found' });
       return;
     }
+
+    // Authorization: verify user owns the board containing this list
+    const isOwner = await authChecksRepo.isListBoardOwner(listId, req.user!.id);
+    if (!isOwner) {
+      res.status(403).json({ message: 'Forbidden' });
+      return;
+    }
+
     const cardsResult = await cardsRepo.findByList(listId);
     res.json(cardsResult);
   } catch (err) {
@@ -23,6 +32,14 @@ export const getCardsByList = async (req: Request, res: Response): Promise<void>
 export const getCardsByBoard = async (req: Request, res: Response): Promise<void> => {
   try {
     const { boardId } = req.params;
+
+    // Authorization: verify user owns the board
+    const isOwner = await authChecksRepo.isBoardOwner(boardId, req.user!.id);
+    if (!isOwner) {
+      res.status(403).json({ message: 'Forbidden' });
+      return;
+    }
+
     const cardsResult = await cardsRepo.findByBoard(boardId);
     res.json(cardsResult);
   } catch (err) {
@@ -38,6 +55,14 @@ export const getCardById = async (req: Request, res: Response): Promise<void> =>
       res.status(404).json({ message: 'Card not found' });
       return;
     }
+
+    // Authorization: verify user owns the board containing this card
+    const isOwner = await authChecksRepo.isCardBoardOwner(req.params.id, req.user!.id);
+    if (!isOwner) {
+      res.status(403).json({ message: 'Forbidden' });
+      return;
+    }
+
     const customFieldValues = await cardFieldValuesRepo.findByCardId(card.id);
     res.json({ ...card, customFieldValues });
   } catch (err) {
@@ -59,6 +84,14 @@ export const createCard = async (req: Request, res: Response): Promise<void> => 
       res.status(404).json({ message: 'List not found' });
       return;
     }
+
+    // Authorization: verify user owns the board containing this list
+    const isOwner = await authChecksRepo.isListBoardOwner(listId, req.user!.id);
+    if (!isOwner) {
+      res.status(403).json({ message: 'Forbidden' });
+      return;
+    }
+
     const card = await cardsRepo.create(listId, dto, list.boardId);
     res.status(201).json(card);
   } catch (err) {
@@ -70,6 +103,13 @@ export const createCard = async (req: Request, res: Response): Promise<void> => 
 export const updateCard = async (req: Request, res: Response): Promise<void> => {
   const dto = req.body as UpdateCardDto;
   try {
+    // Authorization: verify user owns the board containing this card
+    const isOwner = await authChecksRepo.isCardBoardOwner(req.params.id, req.user!.id);
+    if (!isOwner) {
+      res.status(403).json({ message: 'Forbidden' });
+      return;
+    }
+
     const card = await cardsRepo.update(req.params.id, dto);
     if (!card) {
       res.status(404).json({ message: 'Card not found' });
@@ -84,6 +124,13 @@ export const updateCard = async (req: Request, res: Response): Promise<void> => 
 
 export const deleteCard = async (req: Request, res: Response): Promise<void> => {
   try {
+    // Authorization: verify user owns the board containing this card
+    const isOwner = await authChecksRepo.isCardBoardOwner(req.params.id, req.user!.id);
+    if (!isOwner) {
+      res.status(403).json({ message: 'Forbidden' });
+      return;
+    }
+
     const deleted = await cardsRepo.delete(req.params.id);
     if (!deleted) {
       res.status(404).json({ message: 'Card not found' });
@@ -103,6 +150,13 @@ export const moveCard = async (req: Request, res: Response): Promise<void> => {
     return;
   }
   try {
+    // Authorization: verify user owns the board containing this card
+    const isOwner = await authChecksRepo.isCardBoardOwner(req.params.id, req.user!.id);
+    if (!isOwner) {
+      res.status(403).json({ message: 'Forbidden' });
+      return;
+    }
+
     const card = await cardsRepo.move(req.params.id, { listId, position });
     if (!card) {
       res.status(404).json({ message: 'Card not found' });
@@ -123,6 +177,13 @@ export const reorderCards = async (req: Request, res: Response): Promise<void> =
     return;
   }
   try {
+    // Authorization: verify user owns the board containing this list
+    const isOwner = await authChecksRepo.isListBoardOwner(listId, req.user!.id);
+    if (!isOwner) {
+      res.status(403).json({ message: 'Forbidden' });
+      return;
+    }
+
     const cardsResult = await cardsRepo.reorder(listId, orderedIds);
     res.json(cardsResult);
   } catch (err) {

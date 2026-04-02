@@ -1,15 +1,27 @@
 import { Request, Response } from 'express';
-import type { CreateCustomFieldDto, UpdateCustomFieldDto, UpsertCardFieldValueDto } from '../models';
+import type {
+  CreateCustomFieldDto,
+  UpdateCustomFieldDto,
+  UpsertCardFieldValueDto,
+} from '../models';
 import { customFieldsRepo } from '../db/repositories/custom-fields.repo';
 import { cardFieldValuesRepo } from '../db/repositories/card-field-values.repo';
+import { authChecksRepo } from '../db/repositories/auth-checks.repo';
 
 const VALID_TYPES = ['text', 'number', 'checkbox', 'date', 'select'] as const;
-type ValidType = typeof VALID_TYPES[number];
+type ValidType = (typeof VALID_TYPES)[number];
 
 // ─── Custom Fields (board-scoped) ─────────────────────────────────────────────
 
 export const getFieldsByBoard = async (req: Request, res: Response): Promise<void> => {
   try {
+    // Authorization: verify user owns the board
+    const isOwner = await authChecksRepo.isBoardOwner(req.params.boardId, req.user!.id);
+    if (!isOwner) {
+      res.status(403).json({ message: 'Forbidden' });
+      return;
+    }
+
     const fields = await customFieldsRepo.findByBoardId(req.params.boardId);
     res.json(fields);
   } catch (err) {
@@ -30,7 +42,9 @@ export const createField = async (req: Request, res: Response): Promise<void> =>
   }
   if (dto.type === 'select') {
     if (!Array.isArray(dto.options) || dto.options.length === 0) {
-      res.status(400).json({ message: 'options must be a non-empty array of strings for type "select"' });
+      res
+        .status(400)
+        .json({ message: 'options must be a non-empty array of strings for type "select"' });
       return;
     }
     if (!dto.options.every((o) => typeof o === 'string')) {
@@ -39,6 +53,13 @@ export const createField = async (req: Request, res: Response): Promise<void> =>
     }
   }
   try {
+    // Authorization: verify user owns the board
+    const isOwner = await authChecksRepo.isBoardOwner(req.params.boardId, req.user!.id);
+    if (!isOwner) {
+      res.status(403).json({ message: 'Forbidden' });
+      return;
+    }
+
     const field = await customFieldsRepo.create(req.params.boardId, dto);
     res.status(201).json(field);
   } catch (err) {
@@ -55,6 +76,13 @@ export const updateField = async (req: Request, res: Response): Promise<void> =>
   }
   const dto = body as UpdateCustomFieldDto;
   try {
+    // Authorization: verify user owns the board containing this field
+    const isOwner = await authChecksRepo.isCustomFieldBoardOwner(req.params.id, req.user!.id);
+    if (!isOwner) {
+      res.status(403).json({ message: 'Forbidden' });
+      return;
+    }
+
     const field = await customFieldsRepo.update(req.params.id, dto);
     if (!field) {
       res.status(404).json({ message: 'Custom field not found' });
@@ -69,6 +97,13 @@ export const updateField = async (req: Request, res: Response): Promise<void> =>
 
 export const deleteField = async (req: Request, res: Response): Promise<void> => {
   try {
+    // Authorization: verify user owns the board containing this field
+    const isOwner = await authChecksRepo.isCustomFieldBoardOwner(req.params.id, req.user!.id);
+    if (!isOwner) {
+      res.status(403).json({ message: 'Forbidden' });
+      return;
+    }
+
     const deleted = await customFieldsRepo.remove(req.params.id);
     if (!deleted) {
       res.status(404).json({ message: 'Custom field not found' });
@@ -86,17 +121,21 @@ export const deleteField = async (req: Request, res: Response): Promise<void> =>
 export const upsertFieldValue = async (req: Request, res: Response): Promise<void> => {
   const { cardId, fieldId } = req.params;
   const { value } = req.body as UpsertCardFieldValueDto;
-  if (value === null || value === '') {
-    try {
+
+  try {
+    // Authorization: verify user owns the board containing this card
+    const isOwner = await authChecksRepo.isCardBoardOwner(cardId, req.user!.id);
+    if (!isOwner) {
+      res.status(403).json({ message: 'Forbidden' });
+      return;
+    }
+
+    if (value === null || value === '') {
       await cardFieldValuesRepo.remove(cardId, fieldId);
       res.status(204).send();
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ message: 'Internal server error' });
+      return;
     }
-    return;
-  }
-  try {
+
     const fieldValue = await cardFieldValuesRepo.upsert(cardId, fieldId, { value });
     res.json(fieldValue);
   } catch (err) {
@@ -108,6 +147,13 @@ export const upsertFieldValue = async (req: Request, res: Response): Promise<voi
 export const deleteFieldValue = async (req: Request, res: Response): Promise<void> => {
   const { cardId, fieldId } = req.params;
   try {
+    // Authorization: verify user owns the board containing this card
+    const isOwner = await authChecksRepo.isCardBoardOwner(cardId, req.user!.id);
+    if (!isOwner) {
+      res.status(403).json({ message: 'Forbidden' });
+      return;
+    }
+
     await cardFieldValuesRepo.remove(cardId, fieldId);
     res.status(204).send();
   } catch (err) {
