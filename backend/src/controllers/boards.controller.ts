@@ -5,7 +5,7 @@ import { authChecksRepo } from '../db/repositories/auth-checks.repo';
 
 export const getBoards = async (_req: Request, res: Response): Promise<void> => {
   try {
-    const boards = await boardsRepo.findByOwner(_req.user!.id);
+    const boards = await boardsRepo.findAllByOwner(_req.user!.id);
     res.json(boards);
   } catch (err) {
     console.error(err);
@@ -42,7 +42,7 @@ export const createBoard = async (req: Request, res: Response): Promise<void> =>
     return;
   }
   try {
-    const board = await boardsRepo.create(dto);
+    const board = await boardsRepo.create(dto, req.user!.id);
     res.status(201).json(board);
   } catch (err) {
     console.error(err);
