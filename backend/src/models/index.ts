@@ -60,6 +60,7 @@ export interface CustomField {
   type: CustomFieldType;
   options: string[] | null;
   position: number;
+  showOnCard: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -76,8 +77,11 @@ export interface CardFieldValue {
 export type CreateCustomFieldDto = Pick<CustomField, 'name' | 'type'> & {
   options?: string[] | null;
   position?: number;
+  showOnCard?: boolean;
 };
-export type UpdateCustomFieldDto = Partial<Pick<CustomField, 'name' | 'options' | 'position'>>;
+export type UpdateCustomFieldDto = Partial<
+  Pick<CustomField, 'name' | 'options' | 'position' | 'showOnCard'>
+>;
 export type UpsertCardFieldValueDto = Pick<CardFieldValue, 'value'>;
 
 export * from './auth';

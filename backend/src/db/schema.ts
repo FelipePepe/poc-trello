@@ -89,6 +89,7 @@ export const customFields = pgTable('custom_fields', {
   type: varchar('type', { length: 20 }).notNull(),
   options: jsonb('options').default(null),
   position: integer('position').notNull().default(0),
+  showOnCard: boolean('show_on_card').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });

@@ -22,7 +22,17 @@ export const getCardsByList = async (req: Request, res: Response): Promise<void>
     }
 
     const cardsResult = await cardsRepo.findByList(listId);
-    res.json(cardsResult);
+    if (cardsResult.length === 0) {
+      res.json([]);
+      return;
+    }
+    const allFieldValues = await cardFieldValuesRepo.findByCardIds(cardsResult.map((c) => c.id));
+    const valuesByCard = new Map<string, typeof allFieldValues>();
+    allFieldValues.forEach((v) => {
+      if (!valuesByCard.has(v.cardId)) valuesByCard.set(v.cardId, []);
+      valuesByCard.get(v.cardId)!.push(v);
+    });
+    res.json(cardsResult.map((c) => ({ ...c, customFieldValues: valuesByCard.get(c.id) ?? [] })));
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Internal server error' });

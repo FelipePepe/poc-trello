@@ -15,15 +15,19 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { Subject, forkJoin, takeUntil } from 'rxjs';
 
 import { BoardsService } from '../../services/boards.service';
 import { ListsService } from '../../services/lists.service';
 import { CardsService } from '../../services/cards.service';
-import { Board, BoardList, Card } from '../../models';
+import { AuthService } from '../../services/auth.service';
+import { CustomFieldsService } from '../../services/custom-fields.service';
+import { Board, BoardList, Card, CardFieldValue, CustomField } from '../../models';
 import { CardDetailDialogComponent } from '../cards/card-detail-dialog/card-detail-dialog.component';
 import { BoardSettingsDialogComponent } from './board-settings-dialog/board-settings-dialog.component';
+import { ReconfigureMfaDialogComponent } from '../auth/reconfigure-mfa-dialog.component';
 
 @Component({
   selector: 'app-board-detail',
@@ -41,6 +45,7 @@ import { BoardSettingsDialogComponent } from './board-settings-dialog/board-sett
     MatSnackBarModule,
     MatTooltipModule,
     MatDialogModule,
+    MatMenuModule,
   ],
   templateUrl: './board-detail.component.html',
   styleUrl: './board-detail.component.scss',
@@ -51,6 +56,8 @@ export class BoardDetailComponent implements OnInit, OnDestroy {
   private readonly boardsService = inject(BoardsService);
   private readonly listsService = inject(ListsService);
   private readonly cardsService = inject(CardsService);
+  private readonly authService = inject(AuthService);
+  private readonly customFieldsService = inject(CustomFieldsService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
   private readonly destroy$ = new Subject<void>();
@@ -58,6 +65,7 @@ export class BoardDetailComponent implements OnInit, OnDestroy {
   board = signal<Board | null>(null);
   lists = signal<BoardList[]>([]);
   cardsByList = signal<Record<string, Card[]>>({});
+  boardFields = signal<CustomField[]>([]);
   loading = signal(true);
 
   editingListId = signal<string | null>(null);
@@ -88,13 +96,15 @@ export class BoardDetailComponent implements OnInit, OnDestroy {
     forkJoin({
       board: this.boardsService.getById(this.boardId),
       lists: this.listsService.getByBoard(this.boardId),
+      fields: this.customFieldsService.getByBoard(this.boardId),
     })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: ({ board, lists }) => {
+        next: ({ board, lists, fields }) => {
           this.board.set(board);
           this.boardTitle.set(board.title);
           this.lists.set(lists);
+          this.boardFields.set(fields);
           this.loadAllCards(lists);
         },
         error: () => {
@@ -323,11 +333,29 @@ export class BoardDetailComponent implements OnInit, OnDestroy {
           ...prev,
           [card.listId]: prev[card.listId].filter((c) => c.id !== card.id),
         }));
-      } else if (result.updated) {
-        const updated = result.updated as Card;
+        return;
+      }
+      // Merge fieldValues into the card (covers both save and dismiss paths)
+      const applyFieldValues = (target: Card): Card => {
+        if (!result.fieldValues) return target;
+        const customFieldValues: CardFieldValue[] = [];
+        (result.fieldValues as Map<string, string | null>).forEach((value, fieldId) => {
+          if (value !== null)
+            customFieldValues.push({
+              id: '',
+              cardId: target.id,
+              fieldId,
+              value,
+              createdAt: '',
+              updatedAt: '',
+            });
+        });
+        return { ...target, customFieldValues };
+      };
+      if (result.updated) {
+        const updated = applyFieldValues(result.updated as Card);
         this.cardsByList.update((prev) => {
           const next = { ...prev };
-          // remove from old list if moved
           if (updated.listId === card.listId) {
             next[card.listId] = next[card.listId].map((c) => (c.id === card.id ? updated : c));
           } else {
@@ -336,6 +364,43 @@ export class BoardDetailComponent implements OnInit, OnDestroy {
           }
           return next;
         });
+      } else if (result.fieldValues) {
+        // Only field values changed (no save triggered)
+        this.cardsByList.update((prev) => ({
+          ...prev,
+          [card.listId]: prev[card.listId].map((c) => (c.id === card.id ? applyFieldValues(c) : c)),
+        }));
+      }
+    });
+  }
+
+  getUserIdentifier(): string {
+    const user = this.authService.currentUser();
+    if (!user) {
+      return 'Invitado';
+    }
+
+    return user.email;
+  }
+
+  logout(): void {
+    this.authService.logout().subscribe({
+      error: () => {
+        // AuthService already clears session and redirects.
+      },
+    });
+  }
+
+  openReconfigureMfaDialog(): void {
+    const dialogRef = this.dialog.open(ReconfigureMfaDialogComponent, {
+      width: '540px',
+      maxWidth: '96vw',
+      panelClass: 'trello-dialog',
+    });
+
+    dialogRef.afterClosed().subscribe((updated) => {
+      if (updated) {
+        this.snackBar.open('MFA reconfigurado correctamente', 'Cerrar', { duration: 2600 });
       }
     });
   }
@@ -391,5 +456,20 @@ export class BoardDetailComponent implements OnInit, OnDestroy {
   isDue(dueDate: string | null): boolean {
     if (!dueDate) return false;
     return new Date(dueDate) < new Date();
+  }
+
+  /** Returns {name, value} pairs for custom fields with showOnCard=true that have a value on this card */
+  getCardFieldChips(card: Card): { name: string; value: string }[] {
+    const showFields = this.boardFields().filter((f) => f.showOnCard);
+    if (!showFields.length || !card.customFieldValues?.length) return [];
+    return showFields
+      .map((f) => {
+        const fv = card.customFieldValues!.find((v) => v.fieldId === f.id);
+        if (!fv?.value) return null;
+        const display = f.type === 'checkbox' ? (fv.value === 'true' ? '✓' : null) : fv.value;
+        if (!display) return null;
+        return { name: f.name, value: display };
+      })
+      .filter((x): x is { name: string; value: string } => x !== null);
   }
 }

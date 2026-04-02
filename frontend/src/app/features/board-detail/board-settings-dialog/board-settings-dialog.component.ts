@@ -1,5 +1,5 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { NgFor, NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -10,6 +10,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { Board, CreateCustomFieldDto, CustomField, CustomFieldType } from '../../../models';
@@ -19,7 +20,8 @@ import { CustomFieldsService } from '../../../services/custom-fields.service';
   selector: 'app-board-settings-dialog',
   standalone: true,
   imports: [
-    CommonModule,
+    NgFor,
+    NgIf,
     FormsModule,
     MatDialogModule,
     MatButtonModule,
@@ -31,6 +33,7 @@ import { CustomFieldsService } from '../../../services/custom-fields.service';
     MatDividerModule,
     MatSnackBarModule,
     MatTooltipModule,
+    MatSlideToggleModule,
   ],
   templateUrl: './board-settings-dialog.component.html',
   styleUrl: './board-settings-dialog.component.scss',
@@ -47,6 +50,7 @@ export class BoardSettingsDialogComponent implements OnInit {
   newFieldName = signal('');
   newFieldType = signal<CustomFieldType>('text');
   newFieldOptions = signal('');
+  newFieldShowOnCard = signal(false);
 
   readonly fieldTypes: { value: CustomFieldType; label: string }[] = [
     { value: 'text', label: 'Texto' },
@@ -81,6 +85,7 @@ export class BoardSettingsDialogComponent implements OnInit {
       name,
       type: this.newFieldType(),
       position: this.fields().length,
+      showOnCard: this.newFieldShowOnCard(),
     };
 
     if (this.newFieldType() === 'select' && this.newFieldOptions().trim()) {
@@ -96,6 +101,7 @@ export class BoardSettingsDialogComponent implements OnInit {
         this.newFieldName.set('');
         this.newFieldType.set('text');
         this.newFieldOptions.set('');
+        this.newFieldShowOnCard.set(false);
         this.addingField.set(false);
       },
       error: () => this.snackBar.open('Error al crear campo', 'Cerrar', { duration: 3000 }),
