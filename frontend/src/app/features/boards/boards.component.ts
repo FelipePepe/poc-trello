@@ -10,10 +10,13 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatMenuModule } from '@angular/material/menu';
 
 import { BoardsService } from '../../services/boards.service';
+import { AuthService } from '../../services/auth.service';
 import { Board } from '../../models';
 import { CreateBoardDialogComponent } from './create-board-dialog/create-board-dialog.component';
+import { ReconfigureMfaDialogComponent } from '../auth/reconfigure-mfa-dialog.component';
 
 @Component({
   selector: 'app-boards',
@@ -31,12 +34,14 @@ import { CreateBoardDialogComponent } from './create-board-dialog/create-board-d
     MatProgressSpinnerModule,
     MatSnackBarModule,
     MatTooltipModule,
+    MatMenuModule,
   ],
   templateUrl: './boards.component.html',
   styleUrl: './boards.component.scss',
 })
 export class BoardsComponent implements OnInit {
   private boardsService = inject(BoardsService);
+  private authService = inject(AuthService);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
 
@@ -89,6 +94,37 @@ export class BoardsComponent implements OnInit {
         this.snackBar.open('Tablero eliminado', 'Cerrar', { duration: 2000 });
       },
       error: () => this.snackBar.open('Error al eliminar tablero', 'Cerrar', { duration: 3000 }),
+    });
+  }
+
+  getUserIdentifier(): string {
+    const user = this.authService.currentUser();
+    if (!user) {
+      return 'Invitado';
+    }
+
+    return user.email;
+  }
+
+  logout(): void {
+    this.authService.logout().subscribe({
+      error: () => {
+        // AuthService already clears session and redirects.
+      },
+    });
+  }
+
+  openReconfigureMfaDialog(): void {
+    const dialogRef = this.dialog.open(ReconfigureMfaDialogComponent, {
+      width: '540px',
+      maxWidth: '96vw',
+      panelClass: 'trello-dialog',
+    });
+
+    dialogRef.afterClosed().subscribe((updated) => {
+      if (updated) {
+        this.snackBar.open('MFA reconfigurado correctamente', 'Cerrar', { duration: 2600 });
+      }
     });
   }
 

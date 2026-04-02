@@ -5,10 +5,26 @@
         <mat-icon>dashboard</mat-icon>
         <h1>Mis Tableros</h1>
       </div>
-      <button mat-raised-button color="primary" (click)="openCreateDialog()">
-        <mat-icon>add</mat-icon>
-        Nuevo tablero
-      </button>
+
+      <div class="header-actions">
+        <button mat-raised-button color="primary" (click)="openCreateDialog()">
+          <mat-icon>add</mat-icon>
+          Nuevo tablero
+        </button>
+
+        <button mat-stroked-button class="user-pill" [matMenuTriggerFor]="userMenu">
+          <mat-icon>account_circle</mat-icon>
+          {{ getUserIdentifier() }}
+          <mat-icon class="chevron">arrow_drop_down</mat-icon>
+        </button>
+
+        <mat-menu #userMenu="matMenu" xPosition="before">
+          <button mat-menu-item (click)="logout()">
+            <mat-icon>logout</mat-icon>
+            Cerrar sesión
+          </button>
+        </mat-menu>
+      </div>
     </div>
   </header>
 
