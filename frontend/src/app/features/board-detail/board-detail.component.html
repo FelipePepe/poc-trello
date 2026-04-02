@@ -22,22 +22,33 @@
             style="color: white"
           />
         } @else {
-          <h1
-            class="board-title"
-            (click)="startEditBoardTitle()"
-            matTooltip="Clic para editar"
-          >{{ board()!.title }}</h1>
+          <h1 class="board-title" (click)="startEditBoardTitle()" matTooltip="Clic para editar">
+            {{ board()!.title }}
+          </h1>
         }
       </div>
       <div class="board-header-right">
         <button
           mat-icon-button
-          style="color: rgba(255,255,255,0.6)"
+          style="color: rgba(255, 255, 255, 0.6)"
           matTooltip="Configuración del tablero"
           (click)="openBoardSettings()"
         >
           <mat-icon>settings</mat-icon>
         </button>
+
+        <button mat-stroked-button class="user-pill" [matMenuTriggerFor]="userMenu">
+          <mat-icon>account_circle</mat-icon>
+          {{ getUserIdentifier() }}
+          <mat-icon class="chevron">arrow_drop_down</mat-icon>
+        </button>
+
+        <mat-menu #userMenu="matMenu" xPosition="before">
+          <button mat-menu-item (click)="logout()">
+            <mat-icon>logout</mat-icon>
+            Cerrar sesión
+          </button>
+        </mat-menu>
       </div>
     </header>
 
@@ -66,7 +77,12 @@
               } @else {
                 <h3 class="list-title" (click)="startEditList(list)">{{ list.title }}</h3>
               }
-              <button mat-icon-button class="list-menu-btn" (click)="deleteList(list)" matTooltip="Eliminar lista">
+              <button
+                mat-icon-button
+                class="list-menu-btn"
+                (click)="deleteList(list)"
+                matTooltip="Eliminar lista"
+              >
                 <mat-icon>close</mat-icon>
               </button>
             </div>
@@ -84,10 +100,24 @@
                 <div class="card" cdkDrag [cdkDragData]="card" (click)="openCardDetail(card)">
                   <div class="card-labels">
                     @for (label of card.labels; track label.id) {
-                      <span class="label-chip" [style.background]="label.color" [title]="label.name"></span>
+                      <span
+                        class="label-chip"
+                        [style.background]="label.color"
+                        [title]="label.name"
+                      ></span>
                     }
                   </div>
                   <p class="card-title">{{ card.title }}</p>
+                  @if (getCardFieldChips(card).length) {
+                    <div class="card-field-chips">
+                      @for (chip of getCardFieldChips(card); track chip.name) {
+                        <span class="field-chip" [title]="chip.name">
+                          <span class="field-chip-name">{{ chip.name }}</span>
+                          <span class="field-chip-value">{{ chip.value }}</span>
+                        </span>
+                      }
+                    </div>
+                  }
                   <div class="card-meta">
                     @if (card.description) {
                       <mat-icon class="meta-icon" matTooltip="Tiene descripción">subject</mat-icon>
@@ -95,7 +125,7 @@
                     @if (card.dueDate) {
                       <span class="due-date" [class.overdue]="isDue(card.dueDate)">
                         <mat-icon class="meta-icon">schedule</mat-icon>
-                        {{ card.dueDate | date:'d MMM' }}
+                        {{ card.dueDate | date: 'd MMM' }}
                       </span>
                     }
                     <button
@@ -131,7 +161,12 @@
                   (keydown.escape)="cancelAddCard()"
                 ></textarea>
                 <div class="add-card-actions">
-                  <button mat-raised-button color="primary" (click)="confirmAddCard(list.id)" [disabled]="!newCardTitle().trim()">
+                  <button
+                    mat-raised-button
+                    color="primary"
+                    (click)="confirmAddCard(list.id)"
+                    [disabled]="!newCardTitle().trim()"
+                  >
                     Agregar
                   </button>
                   <button mat-icon-button (click)="cancelAddCard()">
@@ -165,7 +200,12 @@
               (keydown.escape)="cancelAddList()"
             />
             <div class="add-list-actions">
-              <button mat-raised-button color="primary" (click)="confirmAddList()" [disabled]="!newListTitle().trim()">
+              <button
+                mat-raised-button
+                color="primary"
+                (click)="confirmAddList()"
+                [disabled]="!newListTitle().trim()"
+              >
                 Agregar lista
               </button>
               <button mat-icon-button (click)="cancelAddList()">

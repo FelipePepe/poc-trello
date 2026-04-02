@@ -1,17 +1,22 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import type { JwtAccessPayload } from '../models/auth';
+import { authSessionsRepo } from '../db/repositories/auth-sessions.repo';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
-      user?: { email: string };
+      user?: { id: string; email: string; name: string; sessionId: string };
     }
   }
 }
 
-export const requireAuth = (req: Request, res: Response, next: NextFunction): void => {
+export const requireAuth = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   const header = req.headers['authorization'];
   if (!header?.startsWith('Bearer ')) {
     res.status(401).json({ message: 'Unauthorized' });
@@ -25,15 +30,39 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction): vo
     return;
   }
 
+  let payload: JwtAccessPayload;
   try {
-    const payload = jwt.verify(token, secret) as JwtAccessPayload;
+    payload = jwt.verify(token, secret) as JwtAccessPayload;
     if (payload.type !== 'access') {
       res.status(401).json({ message: 'Invalid token type' });
       return;
     }
-    req.user = { email: payload.email };
-    next();
   } catch {
     res.status(401).json({ message: 'Invalid or expired token' });
+    return;
   }
+
+  const session = await authSessionsRepo.findById(payload.sid);
+  if (!session) {
+    res.status(401).json({ message: 'Session not found' });
+    return;
+  }
+
+  if (session.revokedAt) {
+    res.status(401).json({ message: 'Session revoked' });
+    return;
+  }
+
+  if (new Date(session.expiresAt) < new Date()) {
+    res.status(401).json({ message: 'Session expired' });
+    return;
+  }
+
+  req.user = {
+    id: payload.sub,
+    email: payload.email,
+    name: payload.name,
+    sessionId: payload.sid,
+  };
+  next();
 };

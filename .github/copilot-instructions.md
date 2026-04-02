@@ -35,6 +35,7 @@ poc-trello/
 ## Comandos esenciales
 
 ### Backend
+
 ```bash
 cd backend
 npm run dev      # ts-node-dev con hot-reload (desarrollo)
@@ -43,6 +44,7 @@ npm start        # node dist/app.js (producción)
 ```
 
 ### Frontend
+
 ```bash
 cd frontend
 ng serve         # Dev server en :4200 con proxy a :3000
@@ -50,6 +52,7 @@ ng build         # Build de producción
 ```
 
 ### Combinado
+
 ```bash
 ./start-dev.sh   # Backend + frontend en paralelo
 ```
@@ -60,11 +63,11 @@ ng build         # Build de producción
 
 ## URLs de desarrollo
 
-| URL | Qué es |
-|-----|--------|
-| `http://localhost:4200` | App Angular |
-| `http://localhost:3000/api-docs` | Swagger UI |
-| `http://localhost:3000/health` | Health check |
+| URL                              | Qué es       |
+| -------------------------------- | ------------ |
+| `http://localhost:4200`          | App Angular  |
+| `http://localhost:3000/api-docs` | Swagger UI   |
+| `http://localhost:3000/health`   | Health check |
 
 ---
 
@@ -73,10 +76,14 @@ ng build         # Build de producción
 ### Backend
 
 **Controladores** — funciones exportadas (no clases):
+
 ```typescript
 export const createBoard = (req: Request, res: Response): void => {
   // Validación inline
-  if (!dto.title?.trim()) { res.status(400).json({ message: 'Title is required' }); return; }
+  if (!dto.title?.trim()) {
+    res.status(400).json({ message: 'Title is required' });
+    return;
+  }
   // Lógica directa
   store.boards.push(board);
   res.status(201).json(board);
@@ -84,8 +91,14 @@ export const createBoard = (req: Request, res: Response): void => {
 ```
 
 **Modelos** — interfaces para dominio, Pick/Partial para DTOs:
+
 ```typescript
-export interface Board { id: string; title: string; createdAt: string; updatedAt: string; }
+export interface Board {
+  id: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+}
 export type CreateBoardDto = Pick<Board, 'title' | 'description' | 'background'>;
 export type UpdateBoardDto = Partial<CreateBoardDto>;
 ```
@@ -96,12 +109,14 @@ export type UpdateBoardDto = Partial<CreateBoardDto>;
 - Early returns después de `res.status().json()` — nunca continúa el flujo
 
 **Rutas** — RESTful anidadas + standalone:
+
 - Recursos anidados: `GET /api/boards/:boardId/lists`
 - CRUD standalone: `PUT /api/lists/:id`, `DELETE /api/lists/:id`
 
 ### Frontend
 
 **Componentes** — standalone, signals, inject():
+
 ```typescript
 @Component({ standalone: true, imports: [MatButtonModule, ...] })
 export class BoardsComponent implements OnInit {
@@ -119,11 +134,14 @@ export class BoardsComponent implements OnInit {
 - Estilos inline en SCSS: `inlineStyleLanguage: 'scss'`
 
 **Servicios** — HttpClient wrappers simples:
+
 ```typescript
 @Injectable({ providedIn: 'root' })
 export class BoardsService {
   private http = inject(HttpClient);
-  getAll() { return this.http.get<Board[]>('/api/boards'); }
+  getAll() {
+    return this.http.get<Board[]>('/api/boards');
+  }
 }
 ```
 
@@ -131,15 +149,15 @@ export class BoardsService {
 
 ## Arquitectura y decisiones de diseño
 
-| Decisión | Valor |
-|----------|-------|
-| Componentes Angular | Standalone (no NgModules) |
-| Reactividad | Signals + RxJS (híbrido — migración pendiente) |
-| Estado global | Sin store global — servicios + signals locales |
-| Build tool Angular | esbuild (`@angular/build:application`) — no webpack |
-| Cascade delete | Hoy: manual en controller. Con DB: FK ON DELETE CASCADE |
-| Labels en Card | Array embebido (`Label[]`) — mapeará a JSONB en PostgreSQL |
-| CORS | Solo `http://localhost:4200` en desarrollo |
+| Decisión            | Valor                                                      |
+| ------------------- | ---------------------------------------------------------- |
+| Componentes Angular | Standalone (no NgModules)                                  |
+| Reactividad         | Signals + RxJS (híbrido — migración pendiente)             |
+| Estado global       | Sin store global — servicios + signals locales             |
+| Build tool Angular  | esbuild (`@angular/build:application`) — no webpack        |
+| Cascade delete      | Hoy: manual en controller. Con DB: FK ON DELETE CASCADE    |
+| Labels en Card      | Array embebido (`Label[]`) — mapeará a JSONB en PostgreSQL |
+| CORS                | Solo `http://localhost:4200` en desarrollo                 |
 
 ---
 
@@ -163,41 +181,48 @@ Este proyecto usa **SDD con Engram** como backend de persistencia.
 
 ### Cuándo usar SDD
 
-| Situación | Acción |
-|-----------|--------|
-| Bug fix puntual / ajuste de estilos | Implementar directo |
-| Feature nueva, aunque sea pequeña | `/sdd-ff <nombre>` primero |
+| Situación                            | Acción                     |
+| ------------------------------------ | -------------------------- |
+| Bug fix puntual / ajuste de estilos  | Implementar directo        |
+| Feature nueva, aunque sea pequeña    | `/sdd-ff <nombre>` primero |
 | Cambio que afecta backend + frontend | `/sdd-ff <nombre>` primero |
-| Refactor de arquitectura / BD | `/sdd-ff <nombre>` primero |
+| Refactor de arquitectura / BD        | `/sdd-ff <nombre>` primero |
 
 > ⚠️ **REGLA DE GIT**: Todo `sdd-apply` DEBE arrancar en una rama `feature/<change-name>`. Cada Phase que compila limpia = un commit inmediato. Ver skill `sdd-git-discipline`.
 
 ### Comandos disponibles
 
-| Comando | Qué hace |
-|---------|----------|
-| `/sdd-init` | Inicializar contexto del proyecto |
-| `/sdd-explore <cambio>` | Investigar un cambio antes de comprometerse |
-| `/sdd-new <cambio>` | Explore + Proposal |
-| `/sdd-ff <cambio>` | Spec + Design + Tasks de una vez (fast-forward) |
-| `/sdd-apply <cambio>` | Implementar tareas |
-| `/sdd-verify <cambio>` | Validar que la implementación cumple specs |
-| `/sdd-archive <cambio>` | Archivar cambio completado |
+| Comando                 | Qué hace                                        |
+| ----------------------- | ----------------------------------------------- |
+| `/sdd-init`             | Inicializar contexto del proyecto               |
+| `/sdd-explore <cambio>` | Investigar un cambio antes de comprometerse     |
+| `/sdd-new <cambio>`     | Explore + Proposal                              |
+| `/sdd-ff <cambio>`      | Spec + Design + Tasks de una vez (fast-forward) |
+| `/sdd-apply <cambio>`   | Implementar tareas                              |
+| `/sdd-verify <cambio>`  | Validar que la implementación cumple specs      |
+| `/sdd-archive <cambio>` | Archivar cambio completado                      |
+
+### Modo de operación (orquestador)
+
+- Copilot actúa como **orquestador SDD** por defecto: recibe el comando del usuario, coordina fases y consolida resultados.
+- Las tareas de ejecución se delegan a subagentes internos cuando corresponda.
+- Los subagentes reportan su salida al orquestador (no directamente al usuario).
+- El usuario interactúa con una sola conversación: el orquestador traduce estado, riesgos y próximos pasos.
 
 ### Cambios activos
 
-| Nombre | Estado | Descripción |
-|--------|--------|-------------|
+| Nombre           | Estado      | Descripción                                             |
+| ---------------- | ----------- | ------------------------------------------------------- |
 | `add-postgresql` | ✅ COMPLETE | Reemplazar in-memory store con PostgreSQL + Drizzle ORM |
 
 ### Artefactos en Engram
 
-| Topic key | Artefacto |
-|-----------|-----------|
-| `sdd-init/poc-trello` | Contexto del proyecto |
-| `sdd/add-postgresql/explore` | Exploración (Drizzle vs Prisma vs raw pg) |
-| `sdd/add-postgresql/proposal` | Proposal |
-| `sdd/add-postgresql/spec` | Spec |
-| `sdd/add-postgresql/design` | Design |
-| `sdd/add-postgresql/tasks` | Tasks |
-| `sdd/add-postgresql/apply-progress` | Apply progress |
+| Topic key                           | Artefacto                                 |
+| ----------------------------------- | ----------------------------------------- |
+| `sdd-init/poc-trello`               | Contexto del proyecto                     |
+| `sdd/add-postgresql/explore`        | Exploración (Drizzle vs Prisma vs raw pg) |
+| `sdd/add-postgresql/proposal`       | Proposal                                  |
+| `sdd/add-postgresql/spec`           | Spec                                      |
+| `sdd/add-postgresql/design`         | Design                                    |
+| `sdd/add-postgresql/tasks`          | Tasks                                     |
+| `sdd/add-postgresql/apply-progress` | Apply progress                            |

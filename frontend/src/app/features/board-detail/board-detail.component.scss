@@ -66,6 +66,56 @@
     color: white;
     box-shadow: 0 0 0 2px rgba(192, 132, 252, 0.5);
   }
+
+  .board-header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .user-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.88);
+    max-width: 260px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    mat-icon {
+      width: 18px;
+      height: 18px;
+      font-size: 18px;
+      color: #9be9ff;
+    }
+  }
+
+  .logout-btn {
+    border-color: rgba(255, 255, 255, 0.22);
+    color: rgba(255, 255, 255, 0.9);
+  }
+}
+
+@media (max-width: 960px) {
+  .board-header {
+    height: auto;
+    min-height: 64px;
+    padding: 10px 16px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+
+    .board-header-right {
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+  }
 }
 
 .lists-container {
@@ -89,7 +139,9 @@
   &::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.2);
     border-radius: 4px;
-    &:hover { background: rgba(255, 255, 255, 0.35); }
+    &:hover {
+      background: rgba(255, 255, 255, 0.35);
+    }
   }
 }
 
@@ -137,7 +189,9 @@
   gap: 4px;
   cursor: grab;
 
-  &:active { cursor: grabbing; }
+  &:active {
+    cursor: grabbing;
+  }
 
   .list-title {
     flex: 1;
@@ -149,7 +203,9 @@
     border-radius: 4px;
     cursor: pointer;
 
-    &:hover { background: rgba(255, 255, 255, 0.08); }
+    &:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
   }
 
   .list-title-input {
@@ -172,10 +228,15 @@
     opacity: 0;
     transition: opacity 0.15s;
 
-    mat-icon { font-size: 16px; color: rgba(255, 255, 255, 0.5); }
+    mat-icon {
+      font-size: 16px;
+      color: rgba(255, 255, 255, 0.5);
+    }
   }
 
-  &:hover .list-menu-btn { opacity: 1; }
+  &:hover .list-menu-btn {
+    opacity: 1;
+  }
 }
 
 .cards-container {
@@ -187,8 +248,13 @@
   flex-direction: column;
   gap: 8px;
 
-  &::-webkit-scrollbar { width: 4px; }
-  &::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 4px; }
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+  }
 }
 
 .empty-list-hint {
@@ -205,7 +271,10 @@
   padding: 8px 10px;
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  transition: box-shadow 0.15s, transform 0.1s, background 0.15s;
+  transition:
+    box-shadow 0.15s,
+    transform 0.1s,
+    background 0.15s;
   position: relative;
 
   &:hover {
@@ -214,7 +283,9 @@
     transform: translateY(-1px);
     border-color: rgba(192, 132, 252, 0.3);
 
-    .card-delete-btn { opacity: 1; }
+    .card-delete-btn {
+      opacity: 1;
+    }
   }
 
   &.cdk-drag-preview {
@@ -236,7 +307,9 @@
     gap: 4px;
     margin-bottom: 6px;
 
-    &:empty { margin-bottom: 0; }
+    &:empty {
+      margin-bottom: 0;
+    }
   }
 
   .label-chip {
@@ -252,6 +325,40 @@
     margin: 0;
     line-height: 1.4;
     word-break: break-word;
+  }
+
+  .card-field-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+  }
+
+  .field-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: rgba(139, 255, 222, 0.12);
+    border: 1px solid rgba(139, 255, 222, 0.22);
+    font-size: 0.6875rem;
+    line-height: 1.5;
+    max-width: 100%;
+
+    .field-chip-name {
+      color: rgba(139, 255, 222, 0.65);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .field-chip-value {
+      color: rgba(255, 255, 255, 0.88);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 80px;
+    }
   }
 
   .card-meta {
@@ -289,7 +396,10 @@
       opacity: 0;
       transition: opacity 0.15s;
 
-      mat-icon { font-size: 14px; color: rgba(255, 255, 255, 0.4); }
+      mat-icon {
+        font-size: 14px;
+        color: rgba(255, 255, 255, 0.4);
+      }
     }
   }
 }
@@ -341,9 +451,13 @@
   cursor: pointer;
   border-radius: 6px;
   margin-top: 4px;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 
-  mat-icon { font-size: 20px; }
+  mat-icon {
+    font-size: 20px;
+  }
 
   &:hover {
     background: rgba(255, 255, 255, 0.08);
@@ -367,9 +481,13 @@
   border-radius: 8px;
   transition: background 0.15s;
 
-  mat-icon { font-size: 20px; }
+  mat-icon {
+    font-size: 20px;
+  }
 
-  &:hover { background: rgba(255, 255, 255, 0.35); }
+  &:hover {
+    background: rgba(255, 255, 255, 0.35);
+  }
 }
 
 .add-list-form {

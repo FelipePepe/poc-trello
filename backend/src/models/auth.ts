@@ -3,6 +3,33 @@ export interface AuthUser {
   name: string;
 }
 
+export interface AuthenticatedUser extends AuthUser {
+  id: string;
+  mfaEnabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StoredAuthUser extends AuthenticatedUser {
+  passwordHash: string;
+  mfaSecret: string | null;
+}
+
+export interface AuthSession {
+  id: string;
+  userId: string;
+  tokenId: string;
+  expiresAt: string;
+  revokedAt: string | null;
+  lastUsedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CreateAuthSessionDto = Pick<AuthSession, 'userId' | 'tokenId' | 'expiresAt'> & {
+  lastUsedAt?: string | null;
+};
+
 export interface LoginDto {
   email: string;
   password: string;
@@ -11,6 +38,10 @@ export interface LoginDto {
 export interface MfaVerifyDto {
   tempToken: string;
   code: string;
+}
+
+export interface ReconfigureMfaDto {
+  currentCode: string;
 }
 
 export interface LoginResponse {
@@ -31,12 +62,18 @@ export interface MfaSetupResponse {
 }
 
 export interface JwtTempPayload {
-  sub: string;
+  sub: string; // userId
   type: 'mfa_pending';
 }
 
 export interface JwtAccessPayload {
-  sub: string;
+  sub: string; // userId
   email: string;
+  name: string;
+  sid: string; // sessionId
   type: 'access';
+}
+
+export interface RefreshDto {
+  refreshToken: string;
 }

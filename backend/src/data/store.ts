@@ -7,6 +7,7 @@ const now = new Date().toISOString();
 const boards: Board[] = [
   {
     id: uuidv4(),
+    ownerId: null,
     title: 'Proyecto Web',
     description: 'Tablero principal del proyecto web',
     background: '#0052CC',
@@ -16,9 +17,30 @@ const boards: Board[] = [
 ];
 
 const lists: BoardList[] = [
-  { id: uuidv4(), boardId: boards[0].id, title: 'Por hacer', position: 0, createdAt: now, updatedAt: now },
-  { id: uuidv4(), boardId: boards[0].id, title: 'En progreso', position: 1, createdAt: now, updatedAt: now },
-  { id: uuidv4(), boardId: boards[0].id, title: 'Hecho', position: 2, createdAt: now, updatedAt: now },
+  {
+    id: uuidv4(),
+    boardId: boards[0].id,
+    title: 'Por hacer',
+    position: 0,
+    createdAt: now,
+    updatedAt: now,
+  },
+  {
+    id: uuidv4(),
+    boardId: boards[0].id,
+    title: 'En progreso',
+    position: 1,
+    createdAt: now,
+    updatedAt: now,
+  },
+  {
+    id: uuidv4(),
+    boardId: boards[0].id,
+    title: 'Hecho',
+    position: 2,
+    createdAt: now,
+    updatedAt: now,
+  },
 ];
 
 const cards: Card[] = [

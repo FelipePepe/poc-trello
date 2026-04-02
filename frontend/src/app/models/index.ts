@@ -31,6 +31,7 @@ export interface CustomField {
   type: CustomFieldType;
   options: string[] | null;
   position: number;
+  showOnCard: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -58,11 +59,34 @@ export interface Card {
   customFieldValues?: CardFieldValue[];
 }
 
+export interface AuthenticatedUser {
+  id: string;
+  email: string;
+  name: string;
+}
+
+export interface MfaSetupResponse {
+  secret: string;
+  otpauthUrl: string;
+  qrDataUrl: string;
+  manualEntry: string;
+}
+
+export interface LoginResponse {
+  mfaRequired?: boolean;
+  tempToken?: string;
+  requiresMfaSetup?: boolean;
+  accessToken?: string;
+  refreshToken?: string;
+  user?: AuthenticatedUser;
+}
+
 export type CreateCustomFieldDto = {
   name: string;
   type: CustomFieldType;
   options?: string[];
   position?: number;
+  showOnCard?: boolean;
 };
 
 export type UpsertCardFieldValueDto = {
