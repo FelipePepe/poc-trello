@@ -1,5 +1,4 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
-import { NgFor, NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -20,8 +19,6 @@ import { CustomFieldsService } from '../../../services/custom-fields.service';
   selector: 'app-board-settings-dialog',
   standalone: true,
   imports: [
-    NgFor,
-    NgIf,
     FormsModule,
     MatDialogModule,
     MatButtonModule,
