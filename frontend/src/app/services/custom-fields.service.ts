@@ -7,28 +7,30 @@ import {
   CustomField,
   UpsertCardFieldValueDto,
 } from '../models';
+import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class CustomFieldsService {
   private readonly http = inject(HttpClient);
+  private readonly api = environment.apiUrl;
 
   getByBoard(boardId: string): Observable<CustomField[]> {
-    return this.http.get<CustomField[]>(`/api/boards/${boardId}/custom-fields`);
+    return this.http.get<CustomField[]>(`${this.api}/api/boards/${boardId}/custom-fields`);
   }
 
   create(boardId: string, dto: CreateCustomFieldDto): Observable<CustomField> {
-    return this.http.post<CustomField>(`/api/boards/${boardId}/custom-fields`, dto);
+    return this.http.post<CustomField>(`${this.api}/api/boards/${boardId}/custom-fields`, dto);
   }
 
   update(
     fieldId: string,
     dto: Partial<Pick<CustomField, 'name' | 'options' | 'position'>>,
   ): Observable<CustomField> {
-    return this.http.put<CustomField>(`/api/custom-fields/${fieldId}`, dto);
+    return this.http.put<CustomField>(`${this.api}/api/custom-fields/${fieldId}`, dto);
   }
 
   delete(fieldId: string): Observable<void> {
-    return this.http.delete<void>(`/api/custom-fields/${fieldId}`);
+    return this.http.delete<void>(`${this.api}/api/custom-fields/${fieldId}`);
   }
 
   upsertValue(
@@ -37,12 +39,12 @@ export class CustomFieldsService {
     dto: UpsertCardFieldValueDto,
   ): Observable<CardFieldValue | null> {
     return this.http.put<CardFieldValue | null>(
-      `/api/cards/${cardId}/field-values/${fieldId}`,
+      `${this.api}/api/cards/${cardId}/field-values/${fieldId}`,
       dto,
     );
   }
 
   deleteValue(cardId: string, fieldId: string): Observable<void> {
-    return this.http.delete<void>(`/api/cards/${cardId}/field-values/${fieldId}`);
+    return this.http.delete<void>(`${this.api}/api/cards/${cardId}/field-values/${fieldId}`);
   }
 }
