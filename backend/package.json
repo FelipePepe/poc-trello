@@ -1,12 +1,13 @@
 {
   "name": "poc-trello-backend",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "Trello clone REST API with OpenAPI/Swagger",
   "main": "dist/app.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
-    "start": "node dist/src/server.js",
+    "start": "NODE_ENV=production node dist/src/server.js",
+    "start:pre": "NODE_ENV=pre node dist/src/server.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
