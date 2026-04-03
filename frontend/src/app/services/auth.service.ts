@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import type { AuthenticatedUser, LoginResponse, MfaSetupResponse } from '../models';
+import { environment } from '../../environments/environment';
 
 const STORAGE_KEYS = {
   accessToken: 'auth_access_token',
@@ -32,6 +33,7 @@ type MfaProvisioningResponse = {
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
+  private readonly api = environment.apiUrl;
 
   currentUser = signal<AuthenticatedUser | null>(null);
   isAuthenticated = computed(() => !!this.currentUser());
@@ -41,7 +43,7 @@ export class AuthService {
   }
 
   login(email: string, password: string): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>('/api/auth/login', { email, password }).pipe(
+    return this.http.post<LoginResponse>(`${this.api}/api/auth/login`, { email, password }).pipe(
       tap((response) => {
         if (response.mfaRequired) {
           return;
@@ -55,14 +57,14 @@ export class AuthService {
   }
 
   mfaSetup(tempToken: string): Observable<MfaSetupResponse> {
-    return this.http.get<MfaSetupResponse>('/api/auth/mfa/setup', {
+    return this.http.get<MfaSetupResponse>(`${this.api}/api/auth/mfa/setup`, {
       headers: { Authorization: `Bearer ${tempToken}` },
     });
   }
 
   mfaVerify(tempToken: string, code: string): Observable<AuthSessionResponse> {
     return this.http
-      .post<AuthSessionResponse>('/api/auth/mfa/verify', { tempToken, code })
+      .post<AuthSessionResponse>(`${this.api}/api/auth/mfa/verify`, { tempToken, code })
       .pipe(
         tap((response) =>
           this.storeSession(response.accessToken, response.refreshToken, response.user),
@@ -72,13 +74,13 @@ export class AuthService {
 
   getMe(): Observable<AuthenticatedUser> {
     return this.http
-      .get<AuthenticatedUser>('/api/auth/me')
+      .get<AuthenticatedUser>(`${this.api}/api/auth/me`)
       .pipe(tap((user) => this.storeUser(user)));
   }
 
   refresh(refreshToken: string): Observable<AuthSessionResponse> {
     return this.http
-      .post<AuthSessionResponse>('/api/auth/refresh', { refreshToken })
+      .post<AuthSessionResponse>(`${this.api}/api/auth/refresh`, { refreshToken })
       .pipe(
         tap((response) =>
           this.storeSession(response.accessToken, response.refreshToken, response.user),
@@ -87,7 +89,9 @@ export class AuthService {
   }
 
   reconfigureMfa(currentCode: string): Observable<MfaProvisioningResponse> {
-    return this.http.post<MfaProvisioningResponse>('/api/auth/mfa/reconfigure', { currentCode });
+    return this.http.post<MfaProvisioningResponse>(`${this.api}/api/auth/mfa/reconfigure`, {
+      currentCode,
+    });
   }
 
   logout(): Observable<LogoutResponse> {
@@ -98,7 +102,7 @@ export class AuthService {
       return of({ message: 'No active session' });
     }
 
-    return this.http.post<LogoutResponse>('/api/auth/logout', {}).pipe(
+    return this.http.post<LogoutResponse>(`${this.api}/api/auth/logout`, {}).pipe(
       tap(() => this.clearSession(true)),
       catchError((error) => {
         this.clearSession(true);
