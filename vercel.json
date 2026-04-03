@@ -3,11 +3,11 @@
   "functions": {
     "api/index.ts": {
       "runtime": "@vercel/node@5",
-      "includeFiles": "backend/src/openapi/**"
+      "includeFiles": "{backend/src/openapi/**,backend/node_modules/swagger-ui-dist/**}"
     },
     "backend/api/index.ts": {
       "runtime": "@vercel/node@5",
-      "includeFiles": "backend/src/openapi/**"
+      "includeFiles": "{backend/src/openapi/**,backend/node_modules/swagger-ui-dist/**}"
     }
   },
   "routes": [
