@@ -2,11 +2,12 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Board, CreateBoardDto, UpdateBoardDto } from '../models';
+import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class BoardsService {
   private readonly http = inject(HttpClient);
-  private readonly base = '/api/boards';
+  private readonly base = `${environment.apiUrl}/api/boards`;
 
   getAll(): Observable<Board[]> {
     return this.http.get<Board[]>(this.base);
