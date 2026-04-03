@@ -1,6 +1,10 @@
 {
   "version": 2,
   "functions": {
+    "api/index.ts": {
+      "runtime": "@vercel/node@5",
+      "includeFiles": "backend/src/openapi/**"
+    },
     "backend/api/index.ts": {
       "runtime": "@vercel/node@5",
       "includeFiles": "backend/src/openapi/**"
